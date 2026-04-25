@@ -43,7 +43,7 @@ Wave 0
 - [x] 01-03-PLAN.md — Alembic migration (hand-written) + run on fresh DB
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 01-04-PLAN.md — FastAPI app (lifespan, CORS, health endpoint)
+- [x] 01-04-PLAN.md — FastAPI app (lifespan, CORS, health endpoint)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 01-05-PLAN.md — Seed script + full phase verification
@@ -189,7 +189,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 3/5 | Executing | - |
+| 1. Infrastructure | 4/5 | Executing | - |
 | 2. Ingest + Parsing + Notch | 0/0 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/0 | Not started | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
