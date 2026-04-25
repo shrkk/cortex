@@ -77,9 +77,9 @@ Cross-cutting constraints:
 - [x] 02-01-PLAN.md — Alembic migration 0002_course_embeddings (adds courses.embedding Vector(1536))
 
 **Wave 2** *(parallel — no inter-dependencies)*
-- [ ] 02-02-PLAN.md — Parsers module (PDF/URL/image/text parsers)
-- [ ] 02-03-PLAN.md — Course API endpoints (GET/POST /courses, GET /courses/match)
-- [ ] 02-04-PLAN.md — NotchDrop clone + NOTICE.md + Cortex/ directory
+- [x] 02-02-PLAN.md — Parsers module (PDF/URL/image/text parsers)
+- [x] 02-03-PLAN.md — Course API endpoints (GET/POST /courses, GET /courses/match)
+- [x] 02-04-PLAN.md — NotchDrop clone + NOTICE.md + Cortex/ directory
 
 **Wave 3** *(depends on 02-01, 02-02, 02-03)*
 - [ ] 02-05-PLAN.md — Background pipeline + POST /ingest + dedup + courses.embedding backfill
