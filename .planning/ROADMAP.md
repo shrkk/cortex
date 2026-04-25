@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [P] **Phase 1: Infrastructure** — Postgres + pgvector running, schema migrated, health endpoint live
+- [x] **Phase 1: Infrastructure** — Postgres + pgvector running, schema migrated, health endpoint live, seed data loaded, 5/5 tests green
 - [ ] **Phase 2: Ingest + Parsing + Notch** — Files dropped into notch arrive at backend as parsed chunks with embeddings
 - [ ] **Phase 3: Extraction, Resolution & Edges** — Concepts extracted, deduplicated per course, edges inferred, depth computed
 - [ ] **Phase 4: Flashcards, Struggle & Quiz** — Flashcard nodes generated, struggle signals detected, quiz endpoint live
@@ -46,7 +46,7 @@ Wave 0
 - [x] 01-04-PLAN.md — FastAPI app (lifespan, CORS, health endpoint)
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 01-05-PLAN.md — Seed script + full phase verification
+- [x] 01-05-PLAN.md — Seed script + full phase verification
 
 Cross-cutting constraints:
 - `pgvector/pgvector:pg16` Docker image enforced in 01-02
@@ -189,7 +189,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 4/5 | Executing | - |
+| 1. Infrastructure | 5/5 | Complete | 2026-04-25 |
 | 2. Ingest + Parsing + Notch | 0/0 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/0 | Not started | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
@@ -224,4 +224,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-04-25*
-*Last updated: 2026-04-25 after initial creation*
+*Last updated: 2026-04-25 after Phase 1 completion (5/5 plans, all INFRA requirements satisfied)*

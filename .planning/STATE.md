@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 1 — Infrastructure
 current_plan: Plan 5 of 5
-status: executing
-last_updated: "2026-04-25T21:59:21Z"
+status: complete
+last_updated: "2026-04-25T22:06:00Z"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State: Cortex
@@ -32,14 +32,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 1 — Infrastructure
-**Current plan:** Plan 5 of 5 (01-05 next)
-**Status:** Executing
-**Last action:** Plan 01-04 complete — 2026-04-25
+**Current plan:** Plan 5 of 5 (complete)
+**Status:** Phase 1 Complete — Ready for Phase 2
+**Last action:** Plan 01-05 complete — 2026-04-25
 
 ```
-Progress: [████████████████░░░░] 80%
+Progress: [████████████████████] 100% (Phase 1)
 
-Phase 1: Infrastructure          [>] Executing — 4/5 plans complete
+Phase 1: Infrastructure          [x] COMPLETE — 5/5 plans complete
 Phase 2: Ingest + Parsing + Notch [ ] Not started
 Phase 3: Extraction, Resolution & Edges [ ] Not started
 Phase 4: Flashcards, Struggle & Quiz [ ] Not started
@@ -57,9 +57,11 @@ Phase 7: Demo Readiness          [ ] Not started
 | Phases total | 7 |
 | Phases complete | 0 |
 | Plans total | 5 (Phase 1) |
-| Plans complete | 4 |
+| Plans complete | 5 |
 | Requirements mapped | 71/71 |
 | Requirements complete | 5/71 (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05) |
+| Phase 1 duration | ~20 min total |
+| Phase 1 tests | 5/5 passing |
 
 ---
 
@@ -87,6 +89,8 @@ Phase 7: Demo Readiness          [ ] Not started
 | alembic.ini uses psycopg2 sync URL | asyncpg is async-only; synchronous migration runner raises RuntimeError if asyncpg URL is used |
 | CORS allows missing Origin header | Swift URLSession sends no Origin; `allow_origins=["*"]` for local dev |
 | Session-per-stage in pipeline | Single session across 8 stages exhausts connection pool; fresh session per stage |
+| pg_insert ON CONFLICT DO NOTHING for seed | Dialect-specific upsert clearer than ORM merge() for integer PK idempotency |
+| Course idempotency via count check | SELECT COUNT(*) per user_id simpler than per-title conflict; sufficient for Phase 1 minimal seed |
 
 ### Critical Pitfalls (do not forget)
 
@@ -112,8 +116,8 @@ Phase 7: Demo Readiness          [ ] Not started
 
 ## Session Continuity
 
-**Last session:** 2026-04-25 — Completed 01-04-PLAN.md (FastAPI app: lifespan, CORS, health endpoint, pytest passing)
-**Next action:** Execute Plan 01-05 (Seed script + full phase verification)
+**Last session:** 2026-04-25 — Completed 01-05-PLAN.md (seed script + full phase gate: 5/5 tests green)
+**Next action:** Execute Phase 2 (Ingest + Parsing + Notch)
 **Open questions:** None
 
 ---
