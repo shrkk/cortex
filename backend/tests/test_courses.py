@@ -12,7 +12,21 @@ from app.core.database import get_session
 
 async def test_list_courses_returns_empty_array(client):
     """GET /courses with no courses in DB returns []."""
-    response = await client.get("/courses")
+    from app.main import app
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_session.execute = AsyncMock(return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))))
+
+    async def override_get_session():
+        yield mock_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        response = await client.get("/courses")
+    finally:
+        app.dependency_overrides.pop(get_session, None)
+
     assert response.status_code == 200
     assert response.json() == []
 
