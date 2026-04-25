@@ -19,13 +19,13 @@ except ModuleNotFoundError:
     pass
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def db_engine():
-    """Shared async engine for migration/seed tests.
+    """Per-test async engine for migration/seed tests.
 
-    Module-scoped so the connection pool is created once per test module and
-    always disposed — even when a test assertion raises an exception — because
-    pytest guarantees fixture teardown after yield.
+    Function-scoped to avoid "Future attached to a different loop" errors:
+    pytest-asyncio 0.24 creates a new event loop per test, so a module-scoped
+    engine created on test-1's loop cannot be reused by test-2's loop.
     """
     from app.core.config import settings
 
