@@ -5,11 +5,15 @@ from alembic import context
 
 # Import Base so target_metadata knows all ORM models
 from app.models.models import Base
+from app.core.config import settings
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override whatever alembic.ini says — read DATABASE_URL_SYNC from environment
+config.set_main_option("sqlalchemy.url", settings.database_url_sync)
 
 # target_metadata enables future alembic autogenerate (we hand-write Phase 1,
 # but keeping this set correctly is required for downgrade + future migrations)
