@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Integer, String, Text, DateTime, Float, JSON, ForeignKey, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
@@ -11,7 +13,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -27,7 +29,7 @@ class Course(Base):
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -54,7 +56,7 @@ class Source(Base):
     )
     error: Mapped[str | None] = mapped_column(Text)
     source_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -75,7 +77,7 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     page_num: Mapped[int | None] = mapped_column(Integer)
     embedding: Mapped[list | None] = mapped_column(Vector(1536))
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -98,7 +100,7 @@ class Concept(Base):
     embedding: Mapped[list | None] = mapped_column(Vector(1536))
     depth: Mapped[int | None] = mapped_column(Integer)
     struggle_signals: Mapped[dict | None] = mapped_column(JSON)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -134,7 +136,7 @@ class ExtractionCache(Base):
     chunk_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     model_version: Mapped[str] = mapped_column(String, nullable=False)
     extracted_concepts: Mapped[list | None] = mapped_column(JSON)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -152,7 +154,7 @@ class Edge(Base):
     edge_type: Mapped[str] = mapped_column(String, nullable=False)
     weight: Mapped[float] = mapped_column(Float, server_default="1.0")
     edge_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -167,7 +169,7 @@ class Flashcard(Base):
     front: Mapped[str] = mapped_column(Text, nullable=False)
     back: Mapped[str] = mapped_column(Text, nullable=False)
     card_type: Mapped[str] = mapped_column(String, nullable=False)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
@@ -182,7 +184,7 @@ class Quiz(Base):
         Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False
     )
     questions: Mapped[list | None] = mapped_column(JSON)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
