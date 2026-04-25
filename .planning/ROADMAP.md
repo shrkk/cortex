@@ -31,7 +31,13 @@
   3. `GET /health` returns HTTP 200 `{"status": "ok"}`
   4. `scripts/seed_demo.py` runs against the migrated DB and produces at least one course row and user_id=1 row
   5. `.env.example` is present and documents every environment variable referenced in the codebase
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
+- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
+- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
+- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
+- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
 **Stack notes**:
   - Docker image: `pgvector/pgvector:pg16` (NOT `postgres:16`)
   - Alembic migration must be hand-written — autogenerate does NOT detect `pgvector.sqlalchemy.Vector` columns
@@ -50,7 +56,13 @@
   4. Dropping a URL routes correctly: arXiv `abs/` links auto-rewrite to PDF; all other URLs produce clean text chunks via trafilatura with title from `<title>` tag
   5. When no courses exist, the notch shows a "Name this course" input before upload; when courses exist and confidence ≥ 0.65, the course is auto-assigned silently
   6. Server restart while sources are `processing` resets them to `pending` on next startup (startup reconciliation hook)
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
+- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
+- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
+- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
+- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
 **Stack notes**:
   - CORS: `allow_origins=["*"]` for local dev — Swift `URLSession` sends no `Origin` header; missing-Origin requests must not be blocked
   - NSItemProvider UTI priority: check `public.png` / `public.jpeg` BEFORE `public.file-url` to avoid temp-file URLs from browser image drags
@@ -70,7 +82,13 @@
   3. Two different PDFs covering "Gradient Descent" in the same CS229 course produce exactly ONE concept node (RESOLVE-05 verified in psql)
   4. After edge inference, `concepts.depth` is a non-null integer for every concept in the course; the course root node is depth 0
   5. The `extraction_cache` table has rows after processing; rerunning the pipeline on the same source skips LLM calls (cache hits logged)
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
+- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
+- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
+- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
+- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
 **Stack notes**:
   - Use Claude `tool_use` with strict JSON Schema (`additionalProperties: false`) — never parse free-text JSON
   - Retry once on parse failure; log malformed responses
@@ -90,7 +108,13 @@
   3. A concept node that has ≥ 3 similar student questions (from a chat_log source) has `struggle_signals` containing `repeated_confusion`
   4. `GET /quiz/{id}/results` returns a score breakdown and a list of concept titles to review
   5. Flipping a flashcard (front → back) requires no grading action — it is purely a display toggle with no DB write
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
+- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
+- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
+- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
+- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
 **Stack notes**:
   - No SRS: flashcard nodes have no `due_at`, `ease_factor`, or `repetitions` columns — this is v2 scope
   - No mastery scoring: `struggle_signals` feed quiz generation only, not a 0–1 score
@@ -121,7 +145,13 @@
   4. Clicking the quiz node on the graph opens the quiz walkthrough; the final screen shows score and "Concepts to review" list
   5. The library page shows all sources with correct status badges; the web uploader is present and labeled as a fallback
   6. When no sources are processing, polling stops; while any source is `pending` or `processing`, the graph re-fetches every 5s
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
+- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
+- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
+- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
+- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
 **Stack notes**:
   - Package: `@xyflow/react` (NOT `reactflow`) — v12 canonical import
   - Dagre: `@dagrejs/dagre` (NOT `dagre`) — use `import * as dagre from '@dagrejs/dagre'`
@@ -150,7 +180,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 0/0 | Not started | - |
+| 1. Infrastructure | 0/5 | Not started | - |
 | 2. Ingest + Parsing + Notch | 0/0 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/0 | Not started | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
