@@ -37,43 +37,47 @@ AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def seed() -> None:
-    async with AsyncSessionLocal() as session:
-        # user_id=1 is hardcoded throughout the codebase (no auth, single-user v1)
-        # ON CONFLICT DO NOTHING makes this idempotent
-        await session.execute(
-            pg_insert(User)
-            .values(id=1)
-            .on_conflict_do_nothing(index_elements=["id"])
-        )
-        await session.flush()
+    try:
+        async with AsyncSessionLocal() as session:
+            # user_id=1 is hardcoded throughout the codebase (no auth, single-user v1)
+            # ON CONFLICT DO NOTHING makes this idempotent
+            await session.execute(
+                pg_insert(User)
+                .values(id=1)
+                .on_conflict_do_nothing(index_elements=["id"])
+            )
+            await session.flush()
 
-        # Check if courses already seeded (idempotency)
-        result = await session.execute(
-            select(func.count()).select_from(Course).where(Course.user_id == 1)
-        )
-        existing_count = result.scalar()
+            # Check if courses already seeded (idempotency)
+            result = await session.execute(
+                select(func.count()).select_from(Course).where(Course.user_id == 1)
+            )
+            existing_count = result.scalar()
 
-        if existing_count == 0:
-            courses = [
-                Course(
-                    user_id=1,
-                    title="CS 229 Machine Learning",
-                    description="Stanford ML course — backprop, regularization, probability",
-                ),
-                Course(
-                    user_id=1,
-                    title="CS 231N Computer Vision",
-                    description="Stanford CV course — CNNs, object detection, segmentation",
-                ),
-            ]
-            session.add_all(courses)
-            await session.commit()
-            print(f"Seeded user_id=1 with {len(courses)} courses.")
-        else:
-            await session.commit()
-            print(f"Seed already applied — user_id=1 has {existing_count} courses. Skipping.")
-
-    await engine.dispose()
+            if existing_count == 0:
+                courses = [
+                    Course(
+                        user_id=1,
+                        title="CS 229 Machine Learning",
+                        description="Stanford ML course — backprop, regularization, probability",
+                    ),
+                    Course(
+                        user_id=1,
+                        title="CS 231N Computer Vision",
+                        description="Stanford CV course — CNNs, object detection, segmentation",
+                    ),
+                ]
+                session.add_all(courses)
+                await session.commit()
+                print(f"Seeded user_id=1 with {len(courses)} courses.")
+            else:
+                await session.commit()
+                print(f"Seed already applied — user_id=1 has {existing_count} courses. Skipping.")
+    except Exception as exc:
+        print(f"Seed failed — is the database running? Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    finally:
+        await engine.dispose()
 
 
 if __name__ == "__main__":
