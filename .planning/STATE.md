@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: Phase 1 — Infrastructure
-current_plan: Plan 5 of 5
-status: complete
-last_updated: "2026-04-25T22:06:00Z"
+current_phase: Phase 2 — Ingest + Parsing + Notch
+current_plan: Plan 0 of 8
+status: planned
+last_updated: "2026-04-25T23:15:00Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 5
+  total_plans: 13
   completed_plans: 5
-  percent: 100
+  percent: 14
 ---
 
 # Project State: Cortex
@@ -31,16 +31,16 @@ progress:
 
 ## Current Position
 
-**Current phase:** Phase 1 — Infrastructure
-**Current plan:** Plan 5 of 5 (complete)
-**Status:** Phase 1 Complete — Ready for Phase 2
-**Last action:** Plan 01-05 complete — 2026-04-25
+**Current phase:** Phase 2 — Ingest + Parsing + Notch
+**Current plan:** Plan 0 of 8 (not started)
+**Status:** Phase 2 Planned — Ready to execute (8 plans, 6 waves)
+**Last action:** Phase 2 planning complete — 2026-04-25
 
 ```
 Progress: [████████████████████] 100% (Phase 1)
 
 Phase 1: Infrastructure          [x] COMPLETE — 5/5 plans complete
-Phase 2: Ingest + Parsing + Notch [ ] Not started
+Phase 2: Ingest + Parsing + Notch [~] PLANNED — 8/8 plans ready
 Phase 3: Extraction, Resolution & Edges [ ] Not started
 Phase 4: Flashcards, Struggle & Quiz [ ] Not started
 Phase 5: Graph API               [ ] Not started
