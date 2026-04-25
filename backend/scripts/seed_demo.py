@@ -36,6 +36,52 @@ engine = create_async_engine(settings.database_url)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
+async def backfill_course_embeddings(session) -> None:
+    """Embed course titles that have no embedding yet (D-06).
+
+    Called once during seed. Idempotent: skips courses that already have embeddings.
+    Requires OPENAI_API_KEY to be set — silently skips if absent.
+    """
+    from app.core.config import settings as _settings
+    if not _settings.openai_api_key:
+        print("[seed] OPENAI_API_KEY not set — skipping course embedding backfill")
+        return
+
+    from openai import AsyncOpenAI
+    from app.models.models import Course
+    import sqlalchemy as sa
+
+    client = AsyncOpenAI(api_key=_settings.openai_api_key)
+
+    result = await session.execute(
+        sa.select(Course).where(Course.embedding.is_(None))
+    )
+    courses_to_embed = result.scalars().all()
+
+    if not courses_to_embed:
+        print("[seed] All courses already have embeddings")
+        return
+
+    titles = [c.title for c in courses_to_embed]
+    print(f"[seed] Backfilling embeddings for {len(titles)} courses: {titles}")
+
+    try:
+        embed_resp = await client.embeddings.create(
+            model="text-embedding-3-small",
+            input=titles,
+        )
+    except Exception as exc:
+        print(f"[seed] Course embedding backfill failed (OpenAI error): {exc}")
+        print("[seed] Courses seeded without embeddings — /courses/match will return null until embeddings are set")
+        return
+
+    for course, embed_data in zip(courses_to_embed, embed_resp.data):
+        course.embedding = embed_data.embedding
+
+    await session.commit()
+    print(f"[seed] Backfilled {len(titles)} course embeddings")
+
+
 async def seed() -> None:
     try:
         async with AsyncSessionLocal() as session:
@@ -73,6 +119,12 @@ async def seed() -> None:
             else:
                 await session.commit()
                 print(f"Seed already applied — user_id=1 has {existing_count} courses. Skipping.")
+
+        # Backfill course embeddings using a fresh session (D-06)
+        # This must run after courses are committed so it sees the rows
+        async with AsyncSessionLocal() as embed_session:
+            await backfill_course_embeddings(embed_session)
+
     except Exception as exc:
         print(f"Seed failed — is the database running? Error: {exc}", file=sys.stderr)
         sys.exit(1)
