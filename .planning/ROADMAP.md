@@ -82,7 +82,7 @@ Cross-cutting constraints:
 - [x] 02-04-PLAN.md — NotchDrop clone + NOTICE.md + Cortex/ directory
 
 **Wave 3** *(depends on 02-01, 02-02, 02-03)*
-- [ ] 02-05-PLAN.md — Background pipeline + POST /ingest + dedup + courses.embedding backfill
+- [x] 02-05-PLAN.md — Background pipeline + POST /ingest + dedup + courses.embedding backfill
 
 **Wave 4** *(depends on 02-04, 02-03)*
 - [ ] 02-06-PLAN.md — Swift Cortex module: CortexClient, CortexIngest, CortexSettings, CortexStatusView [notch-specialist]
