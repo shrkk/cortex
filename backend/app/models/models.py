@@ -53,7 +53,7 @@ class Source(Base):
         String, server_default="pending", nullable=False
     )
     error: Mapped[str | None] = mapped_column(Text)
-    metadata: Mapped[dict | None] = mapped_column(JSON)
+    source_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -147,7 +147,7 @@ class Edge(Base):
     to_id: Mapped[int] = mapped_column(Integer, nullable=False)
     edge_type: Mapped[str] = mapped_column(String, nullable=False)
     weight: Mapped[float] = mapped_column(Float, server_default="1.0")
-    metadata: Mapped[dict | None] = mapped_column(JSON)
+    edge_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
