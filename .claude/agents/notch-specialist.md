@@ -9,10 +9,11 @@ You are working on **Cortex Drop** — a fork of Lakr233/NotchDrop (MIT) that ad
 
 ```
 notch/NotchDrop/NotchDrop/Cortex/
-├── CortexClient.swift       # Networking — POSTs to /ingest
+├── CortexClient.swift       # Networking — POSTs to /ingest, pre-flight /courses/match
 ├── CortexIngest.swift       # NSItemProvider + NSPasteboard extraction
-├── CortexSettings.swift     # UserDefaults-backed settings
-└── CortexStatusView.swift   # SwiftUI status pill
+├── CortexSettings.swift     # UserDefaults-backed settings (no static courseId)
+├── CortexStatusView.swift   # SwiftUI status pill
+└── CortexCourseTab.swift    # Inline course assignment tab in the expanded notch
 ```
 
 The fork lives at `notch/NotchDrop/`. Clone it with:
@@ -350,14 +351,185 @@ Extract the existing drop logic into `originalHandleDrop(_:)`, then replace the 
 }
 ```
 
+## CortexCourseTab.swift — inline course assignment
+
+This component slides into the expanded notch whenever the user needs to pick or create a course. It is **not** a separate window — it renders inline in the notch content area.
+
+```swift
+import SwiftUI
+
+@MainActor
+final class CortexCourseTabState: ObservableObject {
+    static let shared = CortexCourseTabState()
+
+    @Published var isVisible = false
+    @Published var courses: [CourseOption] = []
+    @Published var newCourseName = ""
+    @Published var sessionCourseId: Int? = nil   // remembered for the session
+
+    struct CourseOption: Identifiable {
+        let id: Int
+        let title: String
+    }
+
+    // Called by CortexClient before upload when course resolution is needed
+    func resolve(hint: String) async -> Int? {
+        // 1. Try pre-flight match
+        if let match = await CortexClient.shared.matchCourse(hint: hint) {
+            sessionCourseId = match
+            return match
+        }
+        // 2. Fetch available courses
+        let fetched = await CortexClient.shared.fetchCourses()
+        await MainActor.run {
+            self.courses = fetched.map { CourseOption(id: $0.id, title: $0.title) }
+            self.isVisible = true
+        }
+        // Wait for user selection (resolved via selectCourse / createCourse)
+        return await withCheckedContinuation { continuation in
+            self.pendingContinuation = continuation
+        }
+    }
+
+    func selectCourse(_ id: Int) {
+        sessionCourseId = id
+        isVisible = false
+        pendingContinuation?.resume(returning: id)
+        pendingContinuation = nil
+    }
+
+    func createCourse() async {
+        guard !newCourseName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let id = await CortexClient.shared.createCourse(title: newCourseName)
+        newCourseName = ""
+        selectCourse(id)
+    }
+
+    private var pendingContinuation: CheckedContinuation<Int?, Never>?
+}
+
+struct CortexCourseTab: View {
+    @ObservedObject var state = CortexCourseTabState.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Send to course")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white.opacity(0.6))
+
+            if !state.courses.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(state.courses) { course in
+                            Button(course.title) {
+                                state.selectCourse(course.id)
+                            }
+                            .buttonStyle(CourseChipStyle())
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 6) {
+                TextField(state.courses.isEmpty ? "Name this course…" : "New course…",
+                          text: $state.newCourseName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+                    .onSubmit { Task { await state.createCourse() } }
+
+                if !state.newCourseName.isEmpty {
+                    Button("→") { Task { await state.createCourse() } }
+                        .buttonStyle(CourseChipStyle())
+                }
+            }
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(Color.black.opacity(0.55))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .opacity(state.isVisible ? 1 : 0)
+        .animation(.easeInOut(duration: 0.2), value: state.isVisible)
+    }
+}
+
+private struct CourseChipStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11))
+            .foregroundColor(.white)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(Color.white.opacity(configuration.isPressed ? 0.2 : 0.12))
+            .clipShape(Capsule())
+    }
+}
+```
+
+**Placement** — overlay it alongside `CortexStatusView` at the bottom of the notch:
+```swift
+ZStack(alignment: .bottom) {
+    existingNotchContent
+    VStack(spacing: 4) {
+        CortexCourseTab()
+        CortexStatusView()
+    }
+    .padding(.bottom, 8)
+}
+```
+
+**CortexClient additions needed** to support the tab:
+```swift
+// Pre-flight course match
+func matchCourse(hint: String) async -> Int? {
+    guard let url = URL(string: "\(CortexSettings.shared.backendURL)/courses/match?hint=\(hint.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") else { return nil }
+    guard let (data, _) = try? await URLSession.shared.data(from: url) else { return nil }
+    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let courseId = json["course_id"] as? Int else { return nil }
+    return courseId
+}
+
+// Fetch all courses
+func fetchCourses() async -> [(id: Int, title: String)] {
+    guard let url = URL(string: "\(CortexSettings.shared.backendURL)/courses") else { return [] }
+    guard let (data, _) = try? await URLSession.shared.data(from: url) else { return [] }
+    guard let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+    return arr.compactMap { d in
+        guard let id = d["id"] as? Int, let title = d["title"] as? String else { return nil }
+        return (id: id, title: title)
+    }
+}
+
+// Create a new course
+func createCourse(title: String) async -> Int {
+    var req = URLRequest(url: URL(string: "\(CortexSettings.shared.backendURL)/courses")!)
+    req.httpMethod = "POST"
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.httpBody = try? JSONSerialization.data(withJSONObject: ["title": title, "user_id": 1])
+    guard let (data, _) = try? await URLSession.shared.data(for: req),
+          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let id = json["id"] as? Int else { return 1 }
+    return id
+}
+```
+
+**Course resolution flow in sendFile / sendURL / sendText / sendImage:**
+Before calling `uploadMultipart` or building the JSON body, resolve the course:
+```swift
+let hint = url.lastPathComponent  // or URL title, or first 200 chars of text
+let courseId = await CortexCourseTabState.shared.sessionCourseId
+    ?? (await CortexCourseTabState.shared.resolve(hint: hint))
+    ?? 1  // fallback — should rarely hit
+```
+
 ## Settings section to add
 
-In the existing settings view, add:
+In the existing settings view, add (no course ID stepper — course is assigned dynamically):
 ```swift
 Section("Cortex") {
     Toggle("Send drops to Cortex", isOn: $cortexSettings.enabled)
     TextField("Backend URL", text: $cortexSettings.backendURL)
-    Stepper("Active course ID: \(cortexSettings.courseId)", value: $cortexSettings.courseId, in: 1...999)
 }
 ```
 Inject `@StateObject var cortexSettings = CortexSettings.shared` at the top of the view.
