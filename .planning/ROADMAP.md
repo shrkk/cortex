@@ -74,7 +74,7 @@ Cross-cutting constraints:
 **Plans**: 8 plans
 
 **Wave 1** *(foundation — schema)*
-- [ ] 02-01-PLAN.md — Alembic migration 0002_course_embeddings (adds courses.embedding Vector(1536))
+- [x] 02-01-PLAN.md — Alembic migration 0002_course_embeddings (adds courses.embedding Vector(1536))
 
 **Wave 2** *(parallel — no inter-dependencies)*
 - [ ] 02-02-PLAN.md — Parsers module (PDF/URL/image/text parsers)
