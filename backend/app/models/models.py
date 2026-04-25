@@ -29,6 +29,7 @@ class Course(Base):
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    embedding: Mapped[list | None] = mapped_column(Vector(1536))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
