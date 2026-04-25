@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Infrastructure** — Postgres + pgvector running, schema migrated, health endpoint live
+- [P] **Phase 1: Infrastructure** — Postgres + pgvector running, schema migrated, health endpoint live
 - [ ] **Phase 2: Ingest + Parsing + Notch** — Files dropped into notch arrive at backend as parsed chunks with embeddings
 - [ ] **Phase 3: Extraction, Resolution & Edges** — Concepts extracted, deduplicated per course, edges inferred, depth computed
 - [ ] **Phase 4: Flashcards, Struggle & Quiz** — Flashcard nodes generated, struggle signals detected, quiz endpoint live
@@ -32,12 +32,27 @@
   4. `scripts/seed_demo.py` runs against the migrated DB and produces at least one course row and user_id=1 row
   5. `.env.example` is present and documents every environment variable referenced in the codebase
 **Plans**: 5 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
-- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
-- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
-- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
-- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
+
+Wave 0
+- [ ] 01-01-PLAN.md — Test stubs (pytest config, RED state tests)
+
+**Wave 1** *(blocked on Wave 0 completion)*
+- [ ] 01-02-PLAN.md — Docker Compose, .env.example, requirements, config/database/models
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 01-03-PLAN.md — Alembic migration (hand-written) + run on fresh DB
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 01-04-PLAN.md — FastAPI app (lifespan, CORS, health endpoint)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 01-05-PLAN.md — Seed script + full phase verification
+
+Cross-cutting constraints:
+- `pgvector/pgvector:pg16` Docker image enforced in 01-02
+- `expire_on_commit=False` on all session factories enforced in 01-02, 01-05
+- Hand-written Alembic migration only (no autogenerate) enforced in 01-03
+
 **Stack notes**:
   - Docker image: `pgvector/pgvector:pg16` (NOT `postgres:16`)
   - Alembic migration must be hand-written — autogenerate does NOT detect `pgvector.sqlalchemy.Vector` columns
@@ -56,13 +71,7 @@ Plans:
   4. Dropping a URL routes correctly: arXiv `abs/` links auto-rewrite to PDF; all other URLs produce clean text chunks via trafilatura with title from `<title>` tag
   5. When no courses exist, the notch shows a "Name this course" input before upload; when courses exist and confidence ≥ 0.65, the course is auto-assigned silently
   6. Server restart while sources are `processing` resets them to `pending` on next startup (startup reconciliation hook)
-**Plans**: 5 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0: pytest config + test stubs (RED state)
-- [ ] 01-02-PLAN.md — Wave 1: Docker Compose, env, requirements, config/database/models
-- [ ] 01-03-PLAN.md — Wave 2: Alembic migration (hand-written) + run on fresh DB
-- [ ] 01-04-PLAN.md — Wave 3: FastAPI app (lifespan, CORS, health endpoint)
-- [ ] 01-05-PLAN.md — Wave 4: Seed script + full phase verification
+**Plans**: TBD
 **Stack notes**:
   - CORS: `allow_origins=["*"]` for local dev — Swift `URLSession` sends no `Origin` header; missing-Origin requests must not be blocked
   - NSItemProvider UTI priority: check `public.png` / `public.jpeg` BEFORE `public.file-url` to avoid temp-file URLs from browser image drags
