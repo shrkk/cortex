@@ -4,7 +4,10 @@ Tests for course endpoints: GET /courses, POST /courses, GET /courses/match.
 TDD RED phase — these tests are written BEFORE the implementation exists.
 """
 import pytest
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+
+from app.core.database import get_session
 
 
 async def test_list_courses_returns_empty_array(client):
@@ -16,10 +19,31 @@ async def test_list_courses_returns_empty_array(client):
 
 async def test_create_course_returns_course_object(client):
     """POST /courses creates a course and returns the course object with id."""
-    response = await client.post(
-        "/courses",
-        json={"title": "CS 229: Machine Learning"},
-    )
+    from app.main import app
+
+    # Mock the DB session to avoid FK constraint against users table in test DB
+    mock_session = AsyncMock()
+    # Simulate session.refresh populating the ORM object
+    async def mock_refresh(obj):
+        obj.id = 42
+        obj.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = mock_refresh
+    mock_session.add = MagicMock()
+
+    async def override_get_session():
+        yield mock_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        response = await client.post(
+            "/courses",
+            json={"title": "CS 229: Machine Learning"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_session, None)
+
     assert response.status_code == 201
     data = response.json()
     assert "id" in data
@@ -29,10 +53,29 @@ async def test_create_course_returns_course_object(client):
 
 async def test_create_course_default_user_id_is_1(client):
     """POST /courses without user_id defaults user_id to 1."""
-    response = await client.post(
-        "/courses",
-        json={"title": "Biology 101"},
-    )
+    from app.main import app
+
+    mock_session = AsyncMock()
+    async def mock_refresh(obj):
+        obj.id = 99
+        obj.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = mock_refresh
+    mock_session.add = MagicMock()
+
+    async def override_get_session():
+        yield mock_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        response = await client.post(
+            "/courses",
+            json={"title": "Biology 101"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_session, None)
+
     assert response.status_code == 201
     assert response.json()["user_id"] == 1
 
