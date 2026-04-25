@@ -143,8 +143,12 @@ class Edge(Base):
     __tablename__ = "edges"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    from_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    to_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    from_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("concepts.id", ondelete="CASCADE"), nullable=False
+    )
+    to_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("concepts.id", ondelete="CASCADE"), nullable=False
+    )
     edge_type: Mapped[str] = mapped_column(String, nullable=False)
     weight: Mapped[float] = mapped_column(Float, server_default="1.0")
     edge_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
