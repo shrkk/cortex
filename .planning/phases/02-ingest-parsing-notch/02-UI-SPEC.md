@@ -1,7 +1,8 @@
 ---
 phase: 2
 slug: ingest-parsing-notch
-status: draft
+status: approved
+reviewed_at: 2026-04-25
 shadcn_initialized: false
 preset: none
 created: 2026-04-25
@@ -57,8 +58,7 @@ All spacing values are multiples of 4pt.
 | xl | 20pt | Outer horizontal padding of the notch expanded area |
 
 Exceptions:
-- Status pill horizontal padding: 10pt each side (pill shape requires non-standard inset — use `.padding(.horizontal, 10)`)
-- Status pill vertical padding: 5pt each side (`.padding(.vertical, 5)`)
+- Pill padding: 8pt horizontal, 4pt vertical (pill height: 24pt)
 - Touch targets: minimum 44pt height for all tappable rows in CortexCourseTab (macOS HIG minimum)
 
 ---
@@ -72,9 +72,9 @@ Font: SF Pro via `.font(.system(...))`. Never hardcode point sizes as raw magic 
 | Body (course row label) | `.font(.system(size: 13, weight: .regular))` | 13pt | Regular (400) | 1.4 (system default) |
 | Label (secondary/hint text) | `.font(.system(size: 11, weight: .regular))` | 11pt | Regular (400) | 1.3 |
 | Heading (tab/section title) | `.font(.system(size: 13, weight: .semibold))` | 13pt | Semibold (600) | 1.2 |
-| Pill text | `.font(.system(size: 11, weight: .medium))` | 11pt | Medium (500) | 1.0 (single line only) |
+| Pill text | `.font(.system(size: 11, weight: .semibold))` | 11pt | Semibold (600) | 1.0 (single line only) |
 
-Two weights only: Regular (400) for body/label, Semibold (600) for headings. Pill uses Medium (500) as a single exception for legibility at small size on dark background.
+Two weights only: Regular (400) for body/label, Semibold (600) for headings and pill text.
 
 ---
 
@@ -90,7 +90,7 @@ The notch environment is always dark. All surfaces render on a near-black blurre
 | Destructive | macOS Red | `Color(nsColor: .systemRed)` | Error pill background tint only |
 | Success tint | macOS Green | `Color(nsColor: .systemGreen).opacity(0.15)` | "Sent to [Course]" pill background tint (subtle, not full fill) |
 
-Accent reserved for: CTA button fill ("Confirm", "Upload"), selected/active course row left-border indicator, status pill background when in `sending` state.
+Accent reserved for: CTA button fill ("Confirm Course", "Upload"), selected/active course row left-border indicator, status pill background when in `sending` state.
 
 Do NOT use accent on: body text, secondary labels, row backgrounds, separator lines.
 
@@ -98,6 +98,8 @@ Text on dark backgrounds: use `Color.white` with opacity modifiers:
 - Primary text: `Color.white.opacity(0.90)`
 - Secondary/hint text: `Color.white.opacity(0.55)`
 - Disabled text: `Color.white.opacity(0.30)`
+
+**Focal point:** The primary visual anchor when the notch panel opens is the CortexCourseTab heading — "Name this course" (State A) or the course list heading "Send to…" (State B). This element should be the first text element in reading order and receives the full Semibold (600) heading treatment to draw the user's eye immediately on panel open.
 
 ---
 
@@ -116,9 +118,9 @@ States:
 | Error | `systemRed` at 85% opacity | SF Symbol `exclamationmark.circle.fill` | "Upload failed — check settings" | Auto-dismiss after 4s |
 
 Geometry:
-- Height: 26pt
-- Corner radius: 13pt (fully rounded pill)
-- Horizontal padding: 10pt, vertical: 5pt
+- Height: 24pt
+- Corner radius: 12pt (fully rounded pill)
+- Horizontal padding: 8pt, vertical: 4pt
 - Icon size: 12pt, gap to text: 4pt
 - Entry animation: `.spring(response: 0.3, dampingFraction: 0.7)` slide-down from top + fade-in
 - Exit animation: `.easeOut(duration: 0.25)` fade-out
@@ -139,7 +141,7 @@ Sub-states:
 - Heading: "Name this course" (13pt semibold)
 - Text field: placeholder "e.g. CS 229: Machine Learning" (11pt regular, secondary opacity)
 - TextField background: `Color.white.opacity(0.10)`, corner radius 6pt, height 32pt
-- CTA button: "Confirm" — accent fill, white text, 13pt semibold, height 32pt, corner radius 6pt
+- CTA button: "Confirm Course" — accent fill, white text, 13pt semibold, height 32pt, corner radius 6pt
 - Button disabled state: accent at 40% opacity when text field is empty
 
 **State B — Courses exist, picker shown (ING-13):**
@@ -224,7 +226,7 @@ On every CortexCourseTab appearance:
 
 | Element | Copy |
 |---------|------|
-| Primary CTA (new course) | "Confirm" |
+| Primary CTA (new course) | "Confirm Course" |
 | Primary CTA (existing course) | "Send to [Course Name]" (course name interpolated at runtime) |
 | Status: sending | "Sending to Cortex…" |
 | Status: success | "Sent to [Course Name]" (course name interpolated) |
