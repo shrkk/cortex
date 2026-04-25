@@ -168,23 +168,95 @@
 
 ## Traceability
 
-*Populated during roadmap creation.*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01–05 | Phase 1 | Pending |
-| ING-01–15 | Phase 2 | Pending |
-| PARSE-01–05 | Phase 3 | Pending |
-| PIPE-01–07 | Phase 3 | Pending |
-| EXTRACT-01–05 | Phase 4 | Pending |
-| RESOLVE-01–05 | Phase 4 | Pending |
-| EDGE-01–04 | Phase 5 | Pending |
-| FLASH-01–06 | Phase 6 | Pending |
-| STRUGGLE-01–06 | Phase 6 | Pending |
-| QUIZ-01–06 | Phase 6 | Pending |
-| GRAPH-01–07 | Phase 7 | Pending |
-| UI-01–11 | Phase 8 | Pending |
-| DEMO-01–05 | Phase 9 | Pending |
+| INFRA-01 | Phase 1: Infrastructure | Pending |
+| INFRA-02 | Phase 1: Infrastructure | Pending |
+| INFRA-03 | Phase 1: Infrastructure | Pending |
+| INFRA-04 | Phase 1: Infrastructure | Pending |
+| INFRA-05 | Phase 1: Infrastructure | Pending |
+| ING-01 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-02 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-03 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-04 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-05 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-06 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-07 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-08 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-09 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-10 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-11 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-12 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-13 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-14 | Phase 2: Ingest + Parsing + Notch | Pending |
+| ING-15 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PARSE-01 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PARSE-02 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PARSE-03 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PARSE-04 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PARSE-05 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-01 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-02 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-03 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-04 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-05 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-06 | Phase 2: Ingest + Parsing + Notch | Pending |
+| PIPE-07 | Phase 2: Ingest + Parsing + Notch | Pending |
+| EXTRACT-01 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EXTRACT-02 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EXTRACT-03 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EXTRACT-04 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EXTRACT-05 | Phase 3: Extraction, Resolution & Edges | Pending |
+| RESOLVE-01 | Phase 3: Extraction, Resolution & Edges | Pending |
+| RESOLVE-02 | Phase 3: Extraction, Resolution & Edges | Pending |
+| RESOLVE-03 | Phase 3: Extraction, Resolution & Edges | Pending |
+| RESOLVE-04 | Phase 3: Extraction, Resolution & Edges | Pending |
+| RESOLVE-05 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EDGE-01 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EDGE-02 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EDGE-03 | Phase 3: Extraction, Resolution & Edges | Pending |
+| EDGE-04 | Phase 3: Extraction, Resolution & Edges | Pending |
+| FLASH-01 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| FLASH-02 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| FLASH-03 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| FLASH-04 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| FLASH-05 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| FLASH-06 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-01 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-02 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-03 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-04 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-05 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| STRUGGLE-06 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-01 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-02 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-03 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-04 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-05 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| QUIZ-06 | Phase 4: Flashcards, Struggle & Quiz | Pending |
+| GRAPH-01 | Phase 5: Graph API | Pending |
+| GRAPH-02 | Phase 5: Graph API | Pending |
+| GRAPH-03 | Phase 5: Graph API | Pending |
+| GRAPH-04 | Phase 5: Graph API | Pending |
+| GRAPH-05 | Phase 5: Graph API | Pending |
+| GRAPH-06 | Phase 5: Graph API | Pending |
+| GRAPH-07 | Phase 5: Graph API | Pending |
+| UI-01 | Phase 6: Frontend | Pending |
+| UI-02 | Phase 6: Frontend | Pending |
+| UI-03 | Phase 6: Frontend | Pending |
+| UI-04 | Phase 6: Frontend | Pending |
+| UI-05 | Phase 6: Frontend | Pending |
+| UI-06 | Phase 6: Frontend | Pending |
+| UI-07 | Phase 6: Frontend | Pending |
+| UI-08 | Phase 6: Frontend | Pending |
+| UI-09 | Phase 6: Frontend | Pending |
+| UI-10 | Phase 6: Frontend | Pending |
+| UI-11 | Phase 6: Frontend | Pending |
+| DEMO-01 | Phase 7: Demo Readiness | Pending |
+| DEMO-02 | Phase 7: Demo Readiness | Pending |
+| DEMO-03 | Phase 7: Demo Readiness | Pending |
+| DEMO-04 | Phase 7: Demo Readiness | Pending |
+| DEMO-05 | Phase 7: Demo Readiness | Pending |
 
 **Coverage:**
 - v1 requirements: 71 total
@@ -193,4 +265,4 @@
 
 ---
 *Requirements defined: 2026-04-25*
-*Last updated: 2026-04-25 after initial definition*
+*Last updated: 2026-04-25 after roadmap creation — traceability populated*
