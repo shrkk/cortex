@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: Phase 1 — Infrastructure
-current_plan: Plan 3 of 5
+current_plan: Plan 4 of 5
 status: executing
-last_updated: "2026-04-25T21:49:17Z"
+last_updated: "2026-04-25T21:55:24Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State: Cortex
@@ -32,14 +32,14 @@ progress:
 ## Current Position
 
 **Current phase:** Phase 1 — Infrastructure
-**Current plan:** Plan 3 of 5 (01-03 next)
+**Current plan:** Plan 4 of 5 (01-04 next)
 **Status:** Executing
-**Last action:** Plan 01-02 complete — 2026-04-25
+**Last action:** Plan 01-03 complete — 2026-04-25
 
 ```
-Progress: [████████░░░░░░░░░░░░] 40%
+Progress: [████████████░░░░░░░░] 60%
 
-Phase 1: Infrastructure          [>] Executing — 2/5 plans complete
+Phase 1: Infrastructure          [>] Executing — 3/5 plans complete
 Phase 2: Ingest + Parsing + Notch [ ] Not started
 Phase 3: Extraction, Resolution & Edges [ ] Not started
 Phase 4: Flashcards, Struggle & Quiz [ ] Not started
@@ -57,7 +57,7 @@ Phase 7: Demo Readiness          [ ] Not started
 | Phases total | 7 |
 | Phases complete | 0 |
 | Plans total | 5 (Phase 1) |
-| Plans complete | 2 |
+| Plans complete | 3 |
 | Requirements mapped | 71/71 |
 | Requirements complete | 5/71 (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05) |
 
@@ -83,6 +83,8 @@ Phase 7: Demo Readiness          [ ] Not started
 | ivfflat for chunks deferred | Create after seed data is loaded, not in initial migration |
 | Alembic migration hand-written | autogenerate skips `pgvector.sqlalchemy.Vector` columns silently |
 | FastAPI startup hook resets `processing` → `pending` | Guards against silent task loss on uvicorn --reload |
+| `source_metadata` / `edge_metadata` Python attribute names | SQLAlchemy Declarative API reserves 'metadata'; explicit `mapped_column("metadata", JSON)` preserves DB column name |
+| alembic.ini uses psycopg2 sync URL | asyncpg is async-only; synchronous migration runner raises RuntimeError if asyncpg URL is used |
 | CORS allows missing Origin header | Swift URLSession sends no Origin; `allow_origins=["*"]` for local dev |
 | Session-per-stage in pipeline | Single session across 8 stages exhausts connection pool; fresh session per stage |
 
@@ -110,8 +112,8 @@ Phase 7: Demo Readiness          [ ] Not started
 
 ## Session Continuity
 
-**Last session:** 2026-04-25 — Completed 01-02-PLAN.md (Docker + env scaffold + core modules)
-**Next action:** Execute Plan 01-03 (Alembic migration, hand-written)
+**Last session:** 2026-04-25 — Completed 01-03-PLAN.md (Alembic migration, hand-written, ran upgrade head)
+**Next action:** Execute Plan 01-04 (FastAPI app: lifespan, CORS, health endpoint)
 **Open questions:** None
 
 ---

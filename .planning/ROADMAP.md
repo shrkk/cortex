@@ -40,7 +40,7 @@ Wave 0
 - [x] 01-02-PLAN.md — Docker Compose, .env.example, requirements, config/database/models
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 01-03-PLAN.md — Alembic migration (hand-written) + run on fresh DB
+- [x] 01-03-PLAN.md — Alembic migration (hand-written) + run on fresh DB
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 01-04-PLAN.md — FastAPI app (lifespan, CORS, health endpoint)
@@ -189,7 +189,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure | 2/5 | Executing | - |
+| 1. Infrastructure | 3/5 | Executing | - |
 | 2. Ingest + Parsing + Notch | 0/0 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/0 | Not started | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
