@@ -206,7 +206,23 @@ Cross-cutting constraints:
   4. Clicking the quiz node on the graph opens the quiz walkthrough; the final screen shows score and "Concepts to review" list
   5. The library page shows all sources with correct status badges; the web uploader is present and labeled as a fallback
   6. When no sources are processing, polling stops; while any source is `pending` or `processing`, the graph re-fetches every 5s
-**Plans**: TBD
+**Plans**: 5 plans
+
+**Wave 1** *(foundation — backend gaps + type system)*
+- [ ] 06-01-PLAN.md — Add 5 missing backend endpoints + source_count in graph payload + fix lib/api.ts type mismatches (UI-01, UI-02, UI-06, UI-07, UI-08, UI-09, UI-11)
+
+**Wave 2** *(depends on Wave 1)*
+- [ ] 06-02-PLAN.md — Dark theme override (globals.css); fix dashboard c.name→c.title; fix GraphCanvas buildLayout field reads; fix CoursePage polling + quiz routing (UI-01, UI-02, UI-11)
+
+**Wave 3** *(depends on Wave 2)*
+- [ ] 06-03-PLAN.md — Node visual styles (CourseNode #C96442, ConceptNode scaled + pulsing ring, FlashcardNode moss, QuizNode amber dashed); wire ReadingDrawer concept fetch + struggle_signals dict fix (UI-02, UI-03, UI-04, UI-05)
+
+**Wave 4** *(depends on Wave 3)*
+- [ ] 06-04-PLAN.md — FlashcardView CSS 3D flip; QuizView POST /quiz/{id}/answer wiring; QuizPage SWR (UI-06, UI-07, UI-08)
+
+**Wave 5** *(depends on Wave 4)*
+- [ ] 06-05-PLAN.md — Library uploader course_id + kind; status badges; empty states; human smoke test (UI-09, UI-10)
+
 **Stack notes**:
   - Package: `@xyflow/react` (NOT `reactflow`) — v12 canonical import
   - Dagre: `@dagrejs/dagre` (NOT `dagre`) — use `import * as dagre from '@dagrejs/dagre'`
@@ -240,7 +256,7 @@ Cross-cutting constraints:
 | 3. Extraction, Resolution & Edges | 0/4 | Planned | - |
 | 4. Flashcards, Struggle & Quiz | 0/4 | Planned | - |
 | 5. Graph API | 4/4 | Complete | 2026-04-26 |
-| 6. Frontend | 0/0 | Not started | - |
+| 6. Frontend | 0/5 | Planned | - |
 | 7. Demo Readiness | 0/0 | Not started | - |
 
 ---
@@ -270,4 +286,4 @@ Cross-cutting constraints:
 ---
 
 *Roadmap created: 2026-04-25*
-*Last updated: 2026-04-25 — Phase 4 planning complete (4 plans across 3 waves; all FLASH/STRUGGLE/QUIZ requirements mapped)*
+*Last updated: 2026-04-25 — Phase 6 planning complete (5 plans across 5 waves; all UI-01..UI-11 requirements mapped)*
