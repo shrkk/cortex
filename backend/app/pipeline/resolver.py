@@ -232,6 +232,8 @@ async def _resolve_concept(
     vec = embed_resp.data[0].embedding
 
     # 2) Cosine nearest-neighbor query — COURSE SCOPED (RESOLVE-01)
+    # Session is closed before any LLM call to avoid holding a connection open
+    # across a 1-5 second network I/O operation (CR-03).
     async with AsyncSessionLocal() as session:
         cosine_result = await session.execute(
             sa.select(
@@ -251,28 +253,33 @@ async def _resolve_concept(
             .limit(1)
         )
         row = cosine_result.first()
+    # Session is now closed — connection returned to pool before any LLM call.
 
-        # 3) Decide disposition
-        if row is None or row.dist > _TIEBREAKER_MAX_DIST:
+    # 3) Decide disposition
+    if row is None or row.dist > _TIEBREAKER_MAX_DIST:
+        async with AsyncSessionLocal() as session:
             return await _create_new_concept(
                 session, title, definition, key_points, gotchas, examples,
                 related_concepts, vec, course_id, source_id, student_questions,
             )
 
-        if row.dist <= _AUTO_MERGE_DIST:
+    if row.dist <= _AUTO_MERGE_DIST:
+        async with AsyncSessionLocal() as session:
             return await _merge_into_existing(
                 session, row, key_points, gotchas, examples,
                 source_id, student_questions,
             )
 
-        # 0.08 < dist <= 0.20 -> LLM tiebreaker (RESOLVE-03)
-        decision = await _llm_tiebreaker(
-            new_title=title,
-            new_definition=definition,
-            existing_title=row.title,
-            existing_definition=row.definition or "",
-            anthropic_client=anthropic_client,
-        )
+    # 0.08 < dist <= 0.20 -> LLM tiebreaker (RESOLVE-03)
+    # LLM call is fully outside any DB session — connection pool is free.
+    decision = await _llm_tiebreaker(
+        new_title=title,
+        new_definition=definition,
+        existing_title=row.title,
+        existing_definition=row.definition or "",
+        anthropic_client=anthropic_client,
+    )
+    async with AsyncSessionLocal() as session:
         if decision.get("same"):
             return await _merge_into_existing(
                 session, row, key_points, gotchas, examples,
