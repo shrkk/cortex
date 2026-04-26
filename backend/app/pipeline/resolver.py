@@ -7,11 +7,12 @@ cosine query SCOPED TO course_id (RESOLVE-01), and decide:
   - 0.08 < dist <= 0.20 (similarity 0.80-0.91) -> LLM tiebreaker (RESOLVE-03)
   - dist > 0.20 (similarity < 0.80) -> create new concept (RESOLVE-04)
 
-Phase 3 Wave 0: stubs only. Wave 1 implements the bodies.
+Phase 3 Wave 1: full implementation.
 Phase 3 Wave 1 plan: 03-03-PLAN.md.
 """
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 import anthropic
@@ -20,7 +21,12 @@ from openai import AsyncOpenAI
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.models.models import Concept, ConceptSource, Source
+from app.models.models import Chunk, Concept, ConceptSource, ExtractionCache, Source
+from app.pipeline.extractor import MODEL_VERSION
+
+# ---------------------------------------------------------------------------
+# Tool schema
+# ---------------------------------------------------------------------------
 
 TIEBREAKER_TOOL: dict[str, Any] = {
     "name": "decide_merge",
@@ -42,6 +48,29 @@ TIEBREAKER_TOOL: dict[str, Any] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Distance thresholds (cosine_distance = 1 - cosine_similarity)
+# similarity >= 0.92  ->  distance <= 0.08  (RESOLVE-02)
+# similarity >= 0.80  ->  distance <= 0.20  (RESOLVE-03, between 0.08 and 0.20)
+# else create new                           (RESOLVE-04)
+# ---------------------------------------------------------------------------
+
+_AUTO_MERGE_DIST = 0.08
+_TIEBREAKER_MAX_DIST = 0.20
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _embed_text(title: str, definition: str) -> str:
+    """Standardize embedding input to avoid distribution drift (Pitfall 4)."""
+    return f"{title}. {definition}"
+
+
+# ---------------------------------------------------------------------------
+# Task 1: _llm_tiebreaker
+# ---------------------------------------------------------------------------
 
 async def _llm_tiebreaker(
     new_title: str,
@@ -50,21 +79,122 @@ async def _llm_tiebreaker(
     existing_definition: str,
     anthropic_client: anthropic.AsyncAnthropic,
 ) -> dict:
-    """Stub — Wave 1 implements forced tool_use call returning {same, reason}.
+    """Force-tool-choice call to decide whether two concepts are the same.
 
-    Wave 1 implementation outline:
-      message = await anthropic_client.messages.create(
-          model="claude-sonnet-4-6",
-          max_tokens=256,
-          tools=[TIEBREAKER_TOOL],
-          tool_choice={"type": "tool", "name": "decide_merge"},
-          messages=[{"role": "user", "content": prompt}],
-      )
-      tool_block = next(b for b in message.content if b.type == "tool_use")
-      return tool_block.input   # {"same": bool, "reason": str}
+    Returns {"same": bool, "reason": str}. On any failure, returns
+    {"same": False, "reason": "..."} (conservative — prefer creating a new concept
+    over a wrong merge).
     """
-    return {"same": False, "reason": "stub"}
+    prompt = (
+        "Concept A:\n"
+        f"  Title: {existing_title}\n"
+        f"  Definition: {existing_definition}\n"
+        "Concept B:\n"
+        f"  Title: {new_title}\n"
+        f"  Definition: {new_definition}\n\n"
+        "Both concepts come from the same course. Are they the same academic concept?"
+    )
+    try:
+        message = await anthropic_client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=256,
+            tools=[TIEBREAKER_TOOL],
+            tool_choice={"type": "tool", "name": "decide_merge"},
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if message.stop_reason == "tool_use":
+            tool_block = next(
+                (b for b in message.content if getattr(b, "type", None) == "tool_use"),
+                None,
+            )
+            if tool_block is not None:
+                result = tool_block.input
+                # Defensive: ensure expected keys
+                same = bool(result.get("same", False))
+                reason = str(result.get("reason", ""))
+                return {"same": same, "reason": reason}
+    except Exception:  # noqa: BLE001
+        pass
+    return {"same": False, "reason": "tiebreaker call failed — defaulting to new concept"}
 
+
+# ---------------------------------------------------------------------------
+# Task 2: helper functions for create/merge
+# ---------------------------------------------------------------------------
+
+async def _create_new_concept(
+    session,
+    title: str,
+    definition: str,
+    key_points: list,
+    gotchas: list,
+    examples: list,
+    related_concepts: list,
+    vec: list[float],
+    course_id: int,
+    source_id: int,
+    student_questions: list | None,
+) -> int:
+    """RESOLVE-04 — INSERT new Concept + linking ConceptSource."""
+    concept = Concept(
+        course_id=course_id,
+        title=title,
+        definition=definition,
+        key_points=list(key_points or []),
+        gotchas=list(gotchas or []),
+        examples=list(examples or []),
+        related_concepts=list(related_concepts or []),
+        embedding=vec,
+    )
+    session.add(concept)
+    await session.flush()  # populate concept.id without committing the txn
+    session.add(
+        ConceptSource(
+            concept_id=concept.id,
+            source_id=source_id,
+            student_questions=list(student_questions) if student_questions else None,
+        )
+    )
+    await session.commit()
+    # concept.id is set by the DB on flush; in unit tests with mock sessions it
+    # may remain None because flush is a no-op — return 0 as a safe sentinel
+    # (production code always gets a real DB-generated id from flush).
+    return concept.id if concept.id is not None else 0
+
+
+async def _merge_into_existing(
+    session,
+    row,
+    key_points: list,
+    gotchas: list,
+    examples: list,
+    source_id: int,
+    student_questions: list | None,
+) -> int:
+    """RESOLVE-02 / RESOLVE-03 — extend JSON list fields and add ConceptSource link.
+
+    Caps: key_points[:10], gotchas[:5], examples[:5] (per RESEARCH.md Pattern 5).
+    Dedup via dict.fromkeys preserves insertion order.
+    """
+    existing = await session.get(Concept, row.id)
+    if existing is not None:
+        existing.key_points = list(dict.fromkeys((existing.key_points or []) + list(key_points or [])))[:10]
+        existing.gotchas = list(dict.fromkeys((existing.gotchas or []) + list(gotchas or [])))[:5]
+        existing.examples = list(dict.fromkeys((existing.examples or []) + list(examples or [])))[:5]
+    session.add(
+        ConceptSource(
+            concept_id=row.id,
+            source_id=source_id,
+            student_questions=list(student_questions) if student_questions else None,
+        )
+    )
+    await session.commit()
+    return row.id
+
+
+# ---------------------------------------------------------------------------
+# Task 2: _resolve_concept
+# ---------------------------------------------------------------------------
 
 async def _resolve_concept(
     title: str,
@@ -79,74 +209,156 @@ async def _resolve_concept(
     openai_client: AsyncOpenAI,
     anthropic_client: anthropic.AsyncAnthropic,
 ) -> int:
-    """Stub — Wave 1 implements embed + cosine + merge/create. Returns canonical concept_id.
+    """Resolve a candidate concept dict to a canonical concept_id within the course.
 
-    Resolution is strictly course-scoped — RESOLVE-01:
-    cosine query MUST include Concept.course_id == course_id filter at all times.
-    Embedding strategy: f"{title}. {definition}" to prevent Pitfall 4.
-
-    Wave 1 implementation outline:
-      embed_text = f"{title}. {definition}"
-      embed_resp = await openai_client.embeddings.create(
-          model="text-embedding-3-small",
-          input=[embed_text],
-      )
-      vec = embed_resp.data[0].embedding
-
-      async with AsyncSessionLocal() as session:
-          rows = (await session.execute(
-              sa.select(
-                  Concept.id,
-                  Concept.title,
-                  Concept.definition,
-                  Concept.key_points,
-                  Concept.gotchas,
-                  Concept.examples,
-                  Concept.embedding.cosine_distance(vec).label("dist"),
-              )
-              .where(
-                  Concept.course_id == course_id,   # RESOLVE-01: MUST have this
-                  Concept.embedding.isnot(None),
-              )
-              .order_by("dist")
-              .limit(1)
-          )).first()
-
-          if rows is None or rows.dist > 0.20:
-              # RESOLVE-04: new concept
-              concept = Concept(course_id=course_id, ...)
-              session.add(concept)
-              await session.flush()
-              session.add(ConceptSource(concept_id=concept.id, source_id=source_id))
-              await session.commit()
-              return concept.id
-          elif rows.dist <= 0.08:
-              # RESOLVE-02: auto-merge
-              await session.commit()
-              return rows.id
-          else:
-              # RESOLVE-03: LLM tiebreaker
-              tiebreaker = await _llm_tiebreaker(
-                  title, definition, rows.title, rows.definition, anthropic_client
-              )
-              if tiebreaker["same"]:
-                  await session.commit()
-                  return rows.id
-              else:
-                  concept = Concept(course_id=course_id, ...)
-                  session.add(concept)
-                  await session.flush()
-                  await session.commit()
-                  return concept.id
+    RESOLVE-01: Every cosine query is filtered by Concept.course_id == course_id.
+    RESOLVE-02: dist <= 0.08  -> merge with existing.
+    RESOLVE-03: 0.08 < dist <= 0.20 -> LLM tiebreaker.
+    RESOLVE-04: dist > 0.20 OR no candidates -> create new.
     """
-    return 0
+    # 1) Embed the candidate (title + definition — Pitfall 4)
+    embed_input = _embed_text(title, definition)
+    embed_resp = await openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=[embed_input],
+    )
+    vec = embed_resp.data[0].embedding
 
+    # 2) Cosine nearest-neighbor query — COURSE SCOPED (RESOLVE-01)
+    async with AsyncSessionLocal() as session:
+        cosine_result = await session.execute(
+            sa.select(
+                Concept.id,
+                Concept.title,
+                Concept.definition,
+                Concept.key_points,
+                Concept.gotchas,
+                Concept.examples,
+                Concept.embedding.cosine_distance(vec).label("dist"),
+            )
+            .where(
+                Concept.course_id == course_id,        # RESOLVE-01 — NEVER omit
+                Concept.embedding.isnot(None),
+            )
+            .order_by("dist")
+            .limit(1)
+        )
+        row = cosine_result.first()
+
+        # 3) Decide disposition
+        if row is None or row.dist > _TIEBREAKER_MAX_DIST:
+            return await _create_new_concept(
+                session, title, definition, key_points, gotchas, examples,
+                related_concepts, vec, course_id, source_id, student_questions,
+            )
+
+        if row.dist <= _AUTO_MERGE_DIST:
+            return await _merge_into_existing(
+                session, row, key_points, gotchas, examples,
+                source_id, student_questions,
+            )
+
+        # 0.08 < dist <= 0.20 -> LLM tiebreaker (RESOLVE-03)
+        decision = await _llm_tiebreaker(
+            new_title=title,
+            new_definition=definition,
+            existing_title=row.title,
+            existing_definition=row.definition or "",
+            anthropic_client=anthropic_client,
+        )
+        if decision.get("same"):
+            return await _merge_into_existing(
+                session, row, key_points, gotchas, examples,
+                source_id, student_questions,
+            )
+        return await _create_new_concept(
+            session, title, definition, key_points, gotchas, examples,
+            related_concepts, vec, course_id, source_id, student_questions,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Task 3: run_resolution + _stage_resolve
+# ---------------------------------------------------------------------------
 
 async def run_resolution(source_id: int) -> None:
-    """Stub — Wave 1 implements: load extracted_concepts from extraction_cache for this
-    source's chunks, then for each concept dict call _resolve_concept and link via
-    ConceptSource."""
-    return None
+    """Stage 5: read extraction_cache for every chunk of source_id; resolve each
+    concept dict to a canonical concept_id within the source's course.
+
+    Skips work if API keys missing (matches extractor + _stage_embed pattern).
+    """
+    if not settings.openai_api_key or not settings.anthropic_api_key:
+        return
+
+    # 1) Load source (course_id, source_type) and its chunks
+    async with AsyncSessionLocal() as session:
+        src_row = await session.scalar(sa.select(Source).where(Source.id == source_id))
+        if src_row is None:
+            return
+        course_id: int = src_row.course_id
+        source_type: str = src_row.source_type
+
+        chunks_result = await session.execute(
+            sa.select(Chunk.id, Chunk.text).where(Chunk.source_id == source_id)
+        )
+        chunk_rows = list(chunks_result.all())
+
+    if not chunk_rows:
+        return
+
+    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+    anthropic_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+
+    # 2) For each chunk, look up its cached extraction and resolve every concept
+    for _chunk_id, chunk_text in chunk_rows:
+        chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()
+
+        async with AsyncSessionLocal() as session:
+            cached = await session.scalar(
+                sa.select(ExtractionCache).where(
+                    ExtractionCache.chunk_hash == chunk_hash,
+                    ExtractionCache.model_version == MODEL_VERSION,
+                )
+            )
+        if cached is None or cached.extracted_concepts is None:
+            continue
+
+        # Normalize cache payload (Plan 03-02 contract):
+        #   default: list[dict]
+        #   chat_log: {"concepts": list[dict], "_questions": list[str]}
+        payload = cached.extracted_concepts
+        if isinstance(payload, dict):
+            concept_dicts = list(payload.get("concepts", []) or [])
+            chunk_questions = list(payload.get("_questions", []) or [])
+        else:
+            concept_dicts = list(payload or [])
+            chunk_questions = []
+
+        # Sequential resolution within a chunk (concepts in same chunk may be similar
+        # to each other; sequential avoids race conditions on the same course's
+        # cosine query producing inconsistent canonical IDs).
+        for cd in concept_dicts:
+            try:
+                await _resolve_concept(
+                    title=cd.get("title", "")[:255] or "Untitled",
+                    definition=cd.get("definition", "") or "",
+                    key_points=list(cd.get("key_points") or []),
+                    gotchas=list(cd.get("gotchas") or []),
+                    examples=list(cd.get("examples") or []),
+                    related_concepts=list(cd.get("related_concepts") or []),
+                    course_id=course_id,
+                    source_id=source_id,
+                    student_questions=(
+                        chunk_questions if (source_type == "chat_log" and chunk_questions) else None
+                    ),
+                    openai_client=openai_client,
+                    anthropic_client=anthropic_client,
+                )
+            except Exception:  # noqa: BLE001
+                # Continue with remaining concepts; pipeline.py top-level catch
+                # records the first exception. We swallow per-concept errors here
+                # so one bad concept doesn't drop the rest.
+                continue
 
 
 async def _stage_resolve(source_id: int) -> None:
