@@ -66,19 +66,22 @@ PREREQ_TOOL: dict[str, Any] = {
 }
 
 
-async def _co_occurrence_edges(source_id: int) -> None:
+async def _co_occurrence_edges(source_id: int, course_id: int | None = None) -> None:
     """EDGE-02 — for each chunk in source_id, enumerate concept-pair co-occurrences
     and SELECT-then-UPDATE the edges table.
 
     NEVER inserts 'contains' edge_type rows (EDGE-01: course->concept relationship
     is implicit via concept.course_id FK — see RESEARCH.md Pattern 7).
+
+    course_id may be passed in from run_edges to avoid a redundant Source fetch (WR-06).
     """
-    # 1) Load source -> course_id; load all chunks for this source
+    # 1) Load source -> course_id (skip if already provided); load all chunks
     async with AsyncSessionLocal() as session:
-        src_row = await session.scalar(sa.select(Source).where(Source.id == source_id))
-        if src_row is None:
-            return
-        course_id: int = src_row.course_id
+        if course_id is None:
+            src_row = await session.scalar(sa.select(Source).where(Source.id == source_id))
+            if src_row is None:
+                return
+            course_id = src_row.course_id
 
         chunks_result = await session.execute(
             sa.select(Chunk.id, Chunk.text).where(Chunk.source_id == source_id)
@@ -340,7 +343,7 @@ async def run_edges(source_id: int) -> None:
             return
         course_id: int = src_row.course_id
 
-    await _co_occurrence_edges(source_id)
+    await _co_occurrence_edges(source_id, course_id)
     await _prerequisite_edges(course_id)
     await _compute_depths(course_id)
 
