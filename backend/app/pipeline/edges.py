@@ -88,17 +88,26 @@ async def _co_occurrence_edges(source_id: int) -> None:
     if not chunk_rows:
         return
 
-    # 2) For each chunk, recover (chunk_hash -> list of concept titles) from cache
-    chunk_titles_map: dict[int, list[str]] = {}
-    for chunk_id, chunk_text in chunk_rows:
-        chunk_hash = hashlib.sha256(chunk_text.encode("utf-8")).hexdigest()
-        async with AsyncSessionLocal() as session:
-            cached = await session.scalar(
-                sa.select(ExtractionCache).where(
-                    ExtractionCache.chunk_hash == chunk_hash,
-                    ExtractionCache.model_version == MODEL_VERSION,
-                )
+    # 2) Batch-load ExtractionCache for all chunks in one query (WR-01: avoid N+1 sessions)
+    chunk_hash_to_id: dict[str, int] = {
+        hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(): chunk_id
+        for chunk_id, chunk_text in chunk_rows
+    }
+    chunk_hashes = list(chunk_hash_to_id.keys())
+    async with AsyncSessionLocal() as session:
+        cache_result = await session.execute(
+            sa.select(ExtractionCache).where(
+                ExtractionCache.chunk_hash.in_(chunk_hashes),
+                ExtractionCache.model_version == MODEL_VERSION,
             )
+        )
+        cache_map: dict[str, ExtractionCache] = {
+            r.chunk_hash: r for r in cache_result.scalars()
+        }
+
+    chunk_titles_map: dict[int, list[str]] = {}
+    for chunk_hash, chunk_id in chunk_hash_to_id.items():
+        cached = cache_map.get(chunk_hash)
         if cached is None or cached.extracted_concepts is None:
             continue
         payload = cached.extracted_concepts
