@@ -73,11 +73,12 @@ export default function DashboardPage() {
 function EmptyState() {
   return (
     <div style={{ padding: "80px 0", textAlign: "center" }}>
-      <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink-soft)", marginBottom: 12 }}>
-        Nothing in your graph yet.
+      {/* Empty state copy — exact match to UI-SPEC §Empty States: Dashboard */}
+      <div style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
+        No courses yet
       </div>
       <div style={{ color: "var(--ink-muted)", fontSize: 15, maxWidth: "42ch", margin: "0 auto" }}>
-        Add a source to begin. Drop a PDF, URL, or image into the notch.
+        Drop something into the notch to create your first course automatically.
       </div>
     </div>
   );
