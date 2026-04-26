@@ -4,11 +4,11 @@ from typing import Optional
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
-from openai import AsyncOpenAI, APIError as OpenAIError
+from openai import AsyncOpenAI, APIError as OpenAIError, APIConnectionError, APITimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import AsyncSessionLocal, get_session
+from app.core.database import get_session
 from app.models.models import Course, Concept, Flashcard, Quiz, Edge
 from app.schemas.courses import CourseCreate, CourseMatchResponse, CourseResponse
 from app.schemas.graph import GraphResponse
@@ -36,7 +36,7 @@ async def create_course(
     body: CourseCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    course = Course(title=body.title, user_id=body.user_id)
+    course = Course(title=body.title, user_id=1)  # single-user design: always pin to user 1
     session.add(course)
     await session.commit()
     await session.refresh(course)
@@ -71,7 +71,7 @@ async def match_course(hint: str, session: AsyncSession = Depends(get_session)):
             input=hint,
         )
         hint_vector = embed_response.data[0].embedding
-    except OpenAIError:
+    except (OpenAIError, APIConnectionError, APITimeoutError):
         return None
 
     # Cosine similarity query via pgvector operator <=>
@@ -159,8 +159,8 @@ async def get_course_graph(
     return _build_graph_payload(course, concepts, flashcards, quiz, edges)
 
 
-def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> dict:
-    """Assemble GraphResponse dict from ORM objects.
+def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> GraphResponse:
+    """Assemble GraphResponse from ORM objects.
 
     Rules:
     - Course root node is virtual: synthesized from courses table row (no concept row for it).
@@ -197,7 +197,9 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> dict:
                 "concept_id": c.id,
                 "depth": c.depth,
                 "has_struggle_signals": bool(c.struggle_signals),
-                "struggle_signals": c.struggle_signals,
+                # Raw struggle_signals dict is intentionally excluded here.
+                # It may contain sensitive intermediate data and is unbounded.
+                # Use GET /concepts/{id}/signals for scoped access if needed.
                 "flashcard_count": 0,  # backfilled after flashcard pass below
             },
         })
@@ -269,4 +271,4 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> dict:
             "data": {"weight": e.weight},
         })
 
-    return {"nodes": nodes, "edges": graph_edges}
+    return GraphResponse(nodes=nodes, edges=graph_edges)

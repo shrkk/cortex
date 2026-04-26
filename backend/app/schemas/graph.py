@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -15,7 +15,7 @@ class GraphEdge(BaseModel):
     id: str
     source: str           # prefixed node id string
     target: str           # prefixed node id string
-    type: str             # "contains" | "co_occurrence" | "prerequisite" | "related"
+    type: Literal["contains", "co_occurrence", "prerequisite", "related"]
     data: dict[str, Any] = {}
 
 
