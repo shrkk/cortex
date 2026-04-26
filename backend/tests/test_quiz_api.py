@@ -91,7 +91,6 @@ def test_quiz_router_registered():
 # Implementation tests — xfail RED until Wave 2
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 2 (04-04-PLAN.md) implements POST /quiz")
 @pytest.mark.asyncio
 async def test_create_quiz():
     """QUIZ-02: POST /quiz returns 201 with quiz_id and stripped questions."""
@@ -135,7 +134,6 @@ async def test_create_quiz():
     assert all("reference_answer" not in q for q in data["questions"])
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 2 (04-04-PLAN.md) implements GET /quiz/{id}/results")
 @pytest.mark.asyncio
 async def test_quiz_results():
     """QUIZ-05: GET /quiz/{id}/results returns score + concepts_to_review."""
@@ -169,7 +167,6 @@ async def test_quiz_results():
     assert all("reference_answer" not in q for q in data.get("questions", []))
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 2 (04-04-PLAN.md) implements POST /quiz/{id}/answer")
 @pytest.mark.asyncio
 async def test_answer_persisted():
     """QUIZ-06: POST /quiz/{id}/answer mutates quiz.questions JSON via flag_modified."""
@@ -199,7 +196,6 @@ async def test_answer_persisted():
     mock_flag_modified.assert_called()
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 2 (04-04-PLAN.md) implements POST /quiz/{id}/answer")
 @pytest.mark.asyncio
 async def test_free_response_grading():
     """QUIZ-04: Free-response answer graded by Claude via tool_use, returns {correct, feedback}."""
@@ -245,7 +241,6 @@ async def test_free_response_grading():
     assert "feedback" in data["grading"]
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 2 (04-04-PLAN.md) implements question distribution")
 def test_question_distribution():
     """QUIZ-03: Quiz questions use D-16 distribution formula in the LLM prompt."""
     import inspect
