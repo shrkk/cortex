@@ -143,11 +143,13 @@ async def _co_occurrence_edges(source_id: int) -> None:
             for a, b in combinations(ids, 2):
                 # Canonical ordering: a < b (avoid duplicate edges going both ways)
                 existing = await session.scalar(
-                    sa.select(Edge).where(
+                    sa.select(Edge)
+                    .where(
                         Edge.from_id == a,
                         Edge.to_id == b,
                         Edge.edge_type == "co_occurrence",
                     )
+                    .with_for_update()
                 )
                 if existing is not None:
                     existing.weight = (existing.weight or 1.0) + 1.0
