@@ -1,7 +1,8 @@
 ---
 phase: 6
 slug: frontend
-status: draft
+status: approved
+reviewed_at: "2026-04-25"
 shadcn_initialized: false
 preset: none
 created: 2026-04-25
@@ -57,12 +58,12 @@ Exceptions:
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px | 400 | 1.5 | Panel body text, list items, descriptions |
-| Label | 12px | 500 | 1.4 | Badges, status pills, source citations, metadata |
+| Label | 12px | 600 | 1.4 | Badges, status pills, source citations, metadata |
 | Heading | 18px | 600 | 1.3 | Panel section headings, page titles |
-| Display | 24px | 700 | 1.2 | Course name (dashboard cards), quiz question text |
+| Display | 24px | 600 | 1.2 | Course name (dashboard cards), quiz question text |
 
 Additional rules:
-- Node title labels below concept nodes: 11px, weight 500, line-height 1.2, max 2 lines, text-align center, color `#FAF7F2` at 80% opacity
+- Node title labels below concept nodes: 12px, weight 600, line-height 1.2, max 2 lines, text-align center, color `#FAF7F2` at 80% opacity
 - Course root node label (inside node): 12px, weight 600, text-align center, color `#FAF7F2`
 - Gotcha text in detail panel: 14px, weight 400, background amber highlight (see Color section)
 - Monospaced font (font-mono): used for source type badges (PDF, URL, IMG, TXT) in library page
@@ -102,7 +103,7 @@ Additional rules:
 1. Primary CTA buttons ("Create Course", "Generate Quiz", "Start Quiz")
 2. "Open Cortex" link in notch footer (brand continuity)
 3. Active state indicator on nav links
-4. Concept node fill when no struggle signal (concept nodes — neutral fill)
+4. Course root node fill (60px anchor node)
 
 **Amber `#C18A3F` reserved for:**
 1. Gotcha highlight background in concept detail panel (text highlight, not full block)
