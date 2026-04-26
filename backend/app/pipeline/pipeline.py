@@ -227,13 +227,15 @@ async def _stage_edges(source_id: int) -> None:
 # ---------------------------------------------------------------------------
 
 async def _stage_flashcards_stub(source_id: int) -> None:
-    """Flashcard generation stub — Phase 4 will create flashcard nodes per concept."""
-    pass
+    """Flashcard generation — creates flashcard nodes per concept (Phase 4)."""
+    from app.pipeline.flashcards import run_flashcards
+    await run_flashcards(source_id)
 
 
 async def _stage_signals_stub(source_id: int) -> None:
-    """Struggle signal stub — Phase 4 will detect and store struggle signals."""
-    pass
+    """Struggle signal detection — evaluates and writes struggle signals per concept (Phase 4)."""
+    from app.pipeline.signals import run_signals
+    await run_signals(source_id)
 
 
 # ---------------------------------------------------------------------------

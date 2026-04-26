@@ -73,7 +73,6 @@ def test_signals_omits_unevaluated_keys():
     assert signals == {"gotcha_dense": True}
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) adds flag_modified to run_signals")
 def test_signals_uses_flag_modified():
     """STRUGGLE-05: signals.py uses flag_modified for JSON column mutation."""
     import inspect
@@ -86,7 +85,6 @@ def test_signals_uses_flag_modified():
 # Implementation tests — xfail RED until Wave 1
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) implements run_signals")
 @pytest.mark.asyncio
 async def test_gotcha_dense():
     """STRUGGLE-03: Gotcha phrase in chunk text → gotcha_dense signal written."""
@@ -121,7 +119,6 @@ async def test_gotcha_dense():
     mock_flag_modified.assert_called()
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) implements run_signals")
 @pytest.mark.asyncio
 async def test_practice_failure():
     """STRUGGLE-04: source_metadata problem_incorrect=True → practice_failure signal."""
@@ -156,7 +153,6 @@ async def test_practice_failure():
     assert written_signals.get("practice_failure") is True
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) implements run_signals")
 @pytest.mark.asyncio
 async def test_repeated_confusion():
     """STRUGGLE-01: ≥3 similar question pairs → repeated_confusion=True."""
@@ -177,7 +173,7 @@ async def test_repeated_confusion():
     chunk_result = MagicMock()
     chunk_result.all.return_value = []
     chat_time_result = MagicMock()
-    chat_time_result.all.return_value = []
+    chat_time_result.scalars.return_value.all.return_value = []
     concept_write_result = MagicMock()
     concept_write_result.scalar_one.return_value = concept
     mock_session.execute = AsyncMock(side_effect=[
@@ -201,7 +197,6 @@ async def test_repeated_confusion():
                     await run_signals(source_id=1)
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) implements run_signals")
 @pytest.mark.asyncio
 async def test_retention_gap():
     """STRUGGLE-02: Two chat_log sources ≥24h apart → retention_gap=True."""
@@ -222,7 +217,7 @@ async def test_retention_gap():
     chunk_result = MagicMock()
     chunk_result.all.return_value = []
     chat_time_result = MagicMock()
-    chat_time_result.all.return_value = [now - timedelta(days=2), now]
+    chat_time_result.scalars.return_value.all.return_value = [now - timedelta(days=2), now]
     concept_write_result = MagicMock()
     concept_write_result.scalar_one.return_value = concept
     mock_session.execute = AsyncMock(side_effect=[
@@ -242,7 +237,6 @@ async def test_retention_gap():
     assert written_signals.get("retention_gap") is True
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-03-PLAN.md) implements run_signals")
 @pytest.mark.asyncio
 async def test_signals_written():
     """STRUGGLE-05: Signals written to concepts.struggle_signals JSONB via flag_modified."""
