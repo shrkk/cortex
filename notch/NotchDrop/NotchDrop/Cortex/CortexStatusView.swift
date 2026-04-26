@@ -4,7 +4,7 @@ struct CortexStatusView: View {
     @ObservedObject var client = CortexClient.shared
 
     private var reduceMotion: Bool {
-        NSAccessibility.isReduceMotionEnabled
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
     var body: some View {
