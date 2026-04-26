@@ -178,11 +178,14 @@ async def _stage_embed(source_id: int) -> None:
             return
 
         texts = [c.text for c in chunks]
-        # Batch embed all chunks in one API call (text-embedding-3-small, 1536 dims)
-        embed_resp = await openai_client.embeddings.create(
-            model="text-embedding-3-small",
-            input=texts,
-        )
+        try:
+            # Batch embed all chunks in one API call (text-embedding-3-small, 1536 dims)
+            embed_resp = await openai_client.embeddings.create(
+                model="text-embedding-3-small",
+                input=texts,
+            )
+        except Exception:
+            return  # Embedding is best-effort; invalid/missing key should not fail the pipeline
         for chunk, embed_data in zip(chunks, embed_resp.data):
             chunk.embedding = embed_data.embedding
 

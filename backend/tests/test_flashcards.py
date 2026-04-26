@@ -73,7 +73,6 @@ def test_flashcard_has_required_columns():
 # Implementation tests — xfail RED until Wave 1
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) implements run_flashcards")
 @pytest.mark.asyncio
 async def test_flashcard_generation():
     """FLASH-01: run_flashcards generates 3-6 cards per concept via LLM tool_use call."""
@@ -107,7 +106,6 @@ async def test_flashcard_generation():
     mock_session.commit.assert_called()
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) implements run_flashcards")
 @pytest.mark.asyncio
 async def test_card_types():
     """FLASH-02: Cards include definition, application, and gotcha types."""
@@ -146,7 +144,6 @@ async def test_card_types():
     assert mock_session.add.call_count == 4
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) implements run_flashcards")
 @pytest.mark.asyncio
 async def test_idempotency():
     """FLASH-04: Concepts that already have flashcards are skipped (D-04)."""
@@ -175,7 +172,6 @@ async def test_idempotency():
     mock_session.add.assert_not_called()
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) adds Semaphore(3) to run_flashcards")
 def test_flashcards_uses_semaphore():
     """FLASH-01: flashcards.py uses asyncio.Semaphore(3) for D-05 concurrency limit."""
     import app.pipeline.flashcards as mod
@@ -183,7 +179,6 @@ def test_flashcards_uses_semaphore():
     assert "Semaphore(3)" in source, "flashcards.py must use asyncio.Semaphore(3) per D-05"
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) adds tool_choice to run_flashcards")
 def test_flashcards_uses_tool_choice():
     """FLASH-01: flashcards.py forces tool_use via tool_choice kwarg (D-01)."""
     import app.pipeline.flashcards as mod
@@ -192,7 +187,6 @@ def test_flashcards_uses_tool_choice():
     assert "generate_flashcards" in source, "flashcards.py must reference 'generate_flashcards' tool name"
 
 
-@pytest.mark.xfail(strict=True, reason="RED — Wave 1 (04-02-PLAN.md) adds selectinload to run_flashcards")
 def test_flashcards_uses_selectinload():
     """FLASH-04: flashcards.py uses selectinload(Concept.flashcards) for async idempotency check."""
     import app.pipeline.flashcards as mod
