@@ -159,8 +159,8 @@ async def get_course_graph(
     return _build_graph_payload(course, concepts, flashcards, quiz, edges)
 
 
-def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> dict:
-    """Assemble GraphResponse dict from ORM objects.
+def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> GraphResponse:
+    """Assemble GraphResponse from ORM objects.
 
     Rules:
     - Course root node is virtual: synthesized from courses table row (no concept row for it).
@@ -269,4 +269,4 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> dict:
             "data": {"weight": e.weight},
         })
 
-    return {"nodes": nodes, "edges": graph_edges}
+    return GraphResponse(nodes=nodes, edges=graph_edges)
