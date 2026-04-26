@@ -118,8 +118,8 @@ Cross-cutting constraints:
 - [x] 03-01-PLAN.md — Test stubs (RED state) + extractor/resolver/edges module skeletons
 
 **Wave 1** *(parallel — depends on Wave 0)*
-- [ ] 03-02-PLAN.md — LLM Extraction stage (extractor.py, EXTRACT-01..05)
-- [ ] 03-03-PLAN.md — Concept Resolution stage (resolver.py, RESOLVE-01..05)
+- [x] 03-02-PLAN.md — LLM Extraction stage (extractor.py, EXTRACT-01..05)
+- [x] 03-03-PLAN.md — Concept Resolution stage (resolver.py, RESOLVE-01..05)
 
 **Wave 2** *(depends on Wave 1)*
 - [ ] 03-04-PLAN.md — Edge Inference + BFS depth + pipeline.py wiring (edges.py, EDGE-01..04)
