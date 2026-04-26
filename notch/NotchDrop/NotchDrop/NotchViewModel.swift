@@ -90,6 +90,10 @@ class NotchViewModel: NSObject, ObservableObject {
     }
 
     func notchClose() {
+        // Don't collapse while the course picker is waiting for user input.
+        // All callers dispatch to main, so assumeIsolated is safe here.
+        let pickerActive = MainActor.assumeIsolated { CortexCourseTabState.shared.isVisible }
+        guard !pickerActive else { return }
         openReason = .unknown
         status = .closed
         contentType = .normal

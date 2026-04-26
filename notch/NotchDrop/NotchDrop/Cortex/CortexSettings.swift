@@ -16,7 +16,9 @@ final class CortexSettings: ObservableObject {
 
     private init() {
         self.enabled = UserDefaults.standard.object(forKey: "cortex.enabled") as? Bool ?? true
-        self.backendURL = UserDefaults.standard.string(forKey: "cortex.backendURL") ?? "http://localhost:8000"
+        // Migrate localhost → 127.0.0.1: sandbox blocks DNS, so localhost never resolves
+        let stored = UserDefaults.standard.string(forKey: "cortex.backendURL") ?? "http://127.0.0.1:8000"
+        self.backendURL = stored.replacingOccurrences(of: "localhost", with: "127.0.0.1")
         self.courseId = UserDefaults.standard.object(forKey: "cortex.courseId") as? Int ?? 1
     }
 }

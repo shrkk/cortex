@@ -3,11 +3,37 @@ import AppKit
 
 enum CortexKind: String { case pdf, image, url, text }
 
+// MARK: - RecentDrop
+
+struct RecentDrop: Identifiable {
+    let id = UUID()
+    let typeBadge: String   // "PDF" | "IMG" | "URL" | "TXT"
+    let title: String       // filename, URL host, or text preview
+    let courseName: String  // course name (not ID)
+    let droppedAt: Date
+
+    var timeAgo: String {
+        let interval = Date().timeIntervalSince(droppedAt)
+        if interval < 3600 {
+            return "\(max(1, Int(interval / 60)))m"
+        } else {
+            return "\(Int(interval / 3600))h"
+        }
+    }
+
+    let conceptCount: Int   // 0 in Phase 2 (shown only if > 0)
+}
+
+// MARK: - CortexClient
+
 @MainActor
 final class CortexClient: ObservableObject {
     static let shared = CortexClient()
 
     @Published var status: CortexStatus = .idle
+    @Published var recentDrops: [RecentDrop] = []
+    @Published var menuExpanded: Bool = false
+
     private var resetTask: Task<Void, Never>?
 
     enum CortexStatus: Equatable {
@@ -32,6 +58,29 @@ final class CortexClient: ObservableObject {
         return 1
     }
 
+    /// Look up a course name by ID from CortexCourseTabState.shared.courses.
+    private func courseName(for courseId: Int) -> String {
+        if let course = CortexCourseTabState.shared.courses.first(where: { $0.id == courseId }) {
+            return course.title
+        }
+        return "Unknown"
+    }
+
+    /// Append a RecentDrop (max 5 kept).
+    private func appendDrop(typeBadge: String, title: String, courseName: String) {
+        let drop = RecentDrop(
+            typeBadge: typeBadge,
+            title: title,
+            courseName: courseName,
+            droppedAt: Date(),
+            conceptCount: 0
+        )
+        recentDrops.insert(drop, at: 0)
+        if recentDrops.count > 5 {
+            recentDrops = Array(recentDrops.prefix(5))
+        }
+    }
+
     func sendFile(at url: URL) async {
         await setStatus(.sending(progress: 0.1))
         do {
@@ -39,8 +88,11 @@ final class CortexClient: ObservableObject {
             let data = try Data(contentsOf: url)
             let mime = mimeType(for: url)
             let kind: CortexKind = mime == "application/pdf" ? .pdf : .image
+            let badge = kind == .pdf ? "PDF" : "IMG"
             try await uploadMultipart(data: data, filename: url.lastPathComponent, mime: mime, kind: kind, courseId: courseId)
-            await setStatus(.success(message: "Sent \(url.lastPathComponent)"))
+            let name = courseName(for: courseId)
+            appendDrop(typeBadge: badge, title: url.lastPathComponent, courseName: name)
+            await setStatus(.success(message: "Sent to \(name)"))
         } catch {
             await setStatus(.error(error.localizedDescription))
         }
@@ -62,7 +114,9 @@ final class CortexClient: ObservableObject {
                                       mime: "image/png",
                                       kind: .image,
                                       courseId: courseId)
-            await setStatus(.success(message: "Sent image"))
+            let name = courseName(for: courseId)
+            appendDrop(typeBadge: "IMG", title: "Pasted image", courseName: name)
+            await setStatus(.success(message: "Sent to \(name)"))
         } catch {
             await setStatus(.error(error.localizedDescription))
         }
@@ -79,7 +133,10 @@ final class CortexClient: ObservableObject {
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
             _ = try await URLSession.shared.data(for: req)
-            await setStatus(.success(message: "Sent link"))
+            let name = courseName(for: courseId)
+            let displayTitle = URL(string: urlString)?.host ?? urlString
+            appendDrop(typeBadge: "URL", title: displayTitle, courseName: name)
+            await setStatus(.success(message: "Sent to \(name)"))
         } catch {
             await setStatus(.error(error.localizedDescription))
         }
@@ -100,7 +157,10 @@ final class CortexClient: ObservableObject {
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         do {
             _ = try await URLSession.shared.data(for: req)
-            await setStatus(.success(message: "Sent text"))
+            let name = courseName(for: courseId)
+            let preview = String(text.prefix(40))
+            appendDrop(typeBadge: "TXT", title: preview.isEmpty ? "Pasted text" : preview, courseName: name)
+            await setStatus(.success(message: "Sent to \(name)"))
         } catch {
             await setStatus(.error(error.localizedDescription))
         }

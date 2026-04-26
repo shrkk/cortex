@@ -12,34 +12,39 @@ import UniformTypeIdentifiers
 
 struct NotchContentView: View {
     @StateObject var vm: NotchViewModel
+    @ObservedObject private var courseState = CortexCourseTabState.shared
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Original NotchDrop content — unchanged
+            // Main content — replaced by course picker when active
             ZStack {
-                switch vm.contentType {
-                case .normal:
-                    HStack(spacing: vm.spacing) {
-                        ShareView(vm: vm, type: .airdrop)
-                        TrayView(vm: vm)
+                if courseState.isVisible {
+                    CortexCourseTab()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                } else {
+                    switch vm.contentType {
+                    case .normal:
+                        HStack(spacing: vm.spacing) {
+                            CortexPastePanel(vm: vm)
+                            TrayView(vm: vm)
+                        }
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    case .menu:
+                        NotchMenuView(vm: vm)
+                            .transition(.scale(scale: 0.8).combined(with: .opacity))
+                    case .settings:
+                        NotchSettingsView(vm: vm)
+                            .transition(.scale(scale: 0.8).combined(with: .opacity))
                     }
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-                case .menu:
-                    NotchMenuView(vm: vm)
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
-                case .settings:
-                    NotchSettingsView(vm: vm)
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
             }
+            .animation(.easeInOut(duration: 0.18), value: courseState.isVisible)
             .animation(vm.animation, value: vm.contentType)
 
-            // Cortex overlay — course tab + status pill
-            VStack(spacing: 4) {
-                CortexCourseTab()
-                CortexStatusView()
-            }
-            .padding(.bottom, 8)
+            // Status pill — always visible
+            CortexStatusView()
+                .padding(.bottom, 8)
         }
         .onAppear {
             // ⌘V paste handler — fires when notch window is key window
@@ -56,6 +61,51 @@ struct NotchContentView: View {
                 return event
             }
         }
+    }
+}
+
+// MARK: - Cortex Paste Panel
+
+private struct CortexPastePanel: View {
+    @StateObject var vm: NotchViewModel
+    @State private var hover = false
+
+    private let accent = Color(red: 0.788, green: 0.392, blue: 0.259) // #C96442 terracotta
+    private let panelBg = Color(red: 0.122, green: 0.118, blue: 0.110) // #1F1E1B
+    private let panelFg = Color(red: 0.949, green: 0.929, blue: 0.898) // #F2EDE3
+
+    var body: some View {
+        panelBg
+            .overlay(
+                VStack(spacing: 6) {
+                    Image(systemName: "doc.on.clipboard")
+                        .font(.system(size: 20, weight: .light))
+                    Text("Paste")
+                        .font(.system(.headline, design: .rounded))
+                    Text("URL or image")
+                        .font(.system(size: 10, weight: .regular, design: .rounded))
+                        .opacity(0.55)
+                }
+                .foregroundStyle(hover ? accent : panelFg)
+                .scaleEffect(hover ? 1.05 : 1)
+                .animation(.spring(duration: 0.18), value: hover)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: vm.cornerRadius))
+            .aspectRatio(1, contentMode: .fit)
+            .contentShape(Rectangle())
+            .onHover { hover = $0 }
+            .onTapGesture {
+                #if CORTEX_ENABLED
+                CortexIngest.handleClipboard()
+                #endif
+            }
+            .onDrop(of: [.data], isTargeted: nil) { providers in
+                #if CORTEX_ENABLED
+                return CortexIngest.handleProviders(providers)
+                #else
+                return false
+                #endif
+            }
     }
 }
 

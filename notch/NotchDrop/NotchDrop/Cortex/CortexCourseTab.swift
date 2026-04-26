@@ -87,64 +87,43 @@ struct CortexCourseTab: View {
     }
 
     var body: some View {
-        Group {
-            if state.isVisible {
-                VStack(alignment: .leading, spacing: 0) {
-                    header
-                    if state.courses.isEmpty {
-                        inputRow(placeholder: "e.g. CS 229", topPadding: 12)
-                    } else {
-                        courseList
-                        Divider().background(panelBorder).padding(.top, 4)
-                        newCourseSection
-                    }
-                }
-                .background(panelBg)
-                .clipShape(
-                    .rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
-                          bottomTrailingRadius: 18, topTrailingRadius: 0)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .strokeBorder(panelBorder, lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 12)
+        // Rendered inline — no card chrome. The notch itself is the background.
+        VStack(alignment: .leading, spacing: 0) {
+            eyebrow
+            if state.courses.isEmpty {
+                Spacer(minLength: 0)
+                inputRow(placeholder: "e.g. CS 229")
+            } else {
+                courseList
+                Divider().background(panelBorder)
+                inputRow(placeholder: "new course\u{2026}")
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: state.isVisible)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 36) // leave room for status pill
     }
 
-    // MARK: Header
+    // MARK: Eyebrow
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(state.courses.isEmpty ? "Name this course" : "Which course?")
-                .font(.system(size: 10.5, weight: .medium))
-                .textCase(.uppercase)
-                .tracking(0.8)
-                .foregroundStyle(panelFgDim)
-
-            Text(state.courses.isEmpty
-                 ? "Cortex starts with one course. Give it a name."
-                 : "Couldn\u{2019}t place this drop with confidence. Pick a course.")
-                .font(.system(size: 14, design: .serif))
-                .foregroundStyle(panelFg)
-                .lineSpacing(2)
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 8)
+    private var eyebrow: some View {
+        Text(state.courses.isEmpty ? "Name this course" : "Which course?")
+            .font(.system(size: 10, weight: .medium))
+            .textCase(.uppercase)
+            .tracking(0.8)
+            .foregroundStyle(panelFgDim)
+            .padding(.bottom, 8)
     }
 
     // MARK: Course list (State B)
 
     private var courseList: some View {
         VStack(spacing: 0) {
-            ForEach(state.courses) { course in
+            ForEach(state.courses.prefix(3)) { course in
                 courseRow(course)
             }
         }
-        .padding(.horizontal, 8)
         .padding(.bottom, 6)
     }
 
@@ -154,60 +133,40 @@ struct CortexCourseTab: View {
             HStack(spacing: 10) {
                 Circle()
                     .fill(selected ? cortexAccent : panelFgMuted)
-                    .frame(width: 6, height: 6)
+                    .frame(width: 5, height: 5)
                 Text(course.title)
-                    .font(.system(size: 13.5, design: .serif))
+                    .font(.system(size: 13, design: .serif))
                     .fontWeight(.medium)
                     .foregroundStyle(panelFg)
                     .lineLimit(1)
                 Spacer()
                 if course.concepts > 0 {
                     Text("\(course.concepts)")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(panelFgMuted)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
             .background(selected ? panelRowSelected : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: New course / input (State A bottom + State B footer)
+    // MARK: Input row
 
-    private var newCourseSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !state.courses.isEmpty {
-                Text("New course\u{2026}")
-                    .font(.system(size: 10.5, weight: .medium))
-                    .textCase(.uppercase)
-                    .tracking(0.8)
-                    .foregroundStyle(panelFgDim)
-                    .padding(.horizontal, 4)
-            }
-            inputRow(placeholder: "course name\u{2026}", topPadding: 0)
-        }
-        .padding(.horizontal, 14)
-        .padding(.top, 8)
-        .padding(.bottom, 12)
-    }
-
-    private func inputRow(placeholder: String, topPadding: CGFloat) -> some View {
+    private func inputRow(placeholder: String) -> some View {
         HStack(spacing: 8) {
             TextField(placeholder, text: $state.newCourseName)
                 .font(.system(size: 13))
                 .foregroundStyle(panelFg)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+                .padding(.vertical, 6)
                 .background(panelInput)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(panelInputBorder, lineWidth: 1)
-                )
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(panelInputBorder, lineWidth: 1))
                 .onSubmit { Task { await state.createCourse() } }
 
             let empty = state.newCourseName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -215,14 +174,12 @@ struct CortexCourseTab: View {
                 .font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(Color.white)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .padding(.vertical, 6)
                 .background(empty ? cortexAccent.opacity(0.4) : cortexAccent)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .buttonStyle(.plain)
                 .disabled(empty)
         }
-        .padding(.top, topPadding)
-        .padding(.horizontal, state.courses.isEmpty ? 14 : 0)
-        .padding(.bottom, state.courses.isEmpty ? 12 : 0)
+        .padding(.top, state.courses.isEmpty ? 0 : 8)
     }
 }
