@@ -12,7 +12,18 @@ A student drops content into the notch → Cortex automatically builds a course-
 
 ### Validated
 
-(None yet — ship to validate)
+**Phase 1: Infrastructure** — Validated 2026-04-25
+- Postgres + pgvector running, schema migrated, health endpoint live, seed data loaded, 5/5 tests green
+
+**Phase 2: Ingest + Parsing + Notch** — Validated 2026-04-26 (7/8 plans; test plan pending)
+- Files dropped into notch arrive at backend as parsed chunks with embeddings
+- NotchDrop fork with CortexClient, CortexCourseTab, CortexStatusView integrated
+
+**Phase 3: Extraction, Resolution & Edges** — Validated 2026-04-26
+- Concept extraction via Claude tool_use with ExtractionCache dedup (EXTRACT-01..05)
+- pgvector cosine resolution scoped per course, LLM tiebreaker (RESOLVE-01..05)
+- Co-occurrence + prerequisite edges, BFS depth scoring (EDGE-01..04)
+- 38/38 phase tests green; 14/14 must-haves verified
 
 ### Active
 
