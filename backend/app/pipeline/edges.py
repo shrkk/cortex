@@ -309,12 +309,14 @@ async def _compute_depths(course_id: int) -> None:
         if cid not in depths:
             depths[cid] = 1
 
-    # 5) Bulk UPDATE Concept.depth
+    # 5) Bulk UPDATE Concept.depth — single CASE WHEN statement (WR-02)
     async with AsyncSessionLocal() as session:
-        for cid, depth in depths.items():
-            await session.execute(
-                sa.update(Concept).where(Concept.id == cid).values(depth=depth)
-            )
+        case_expr = sa.case(depths, value=Concept.id)
+        await session.execute(
+            sa.update(Concept)
+            .where(Concept.id.in_(depths.keys()))
+            .values(depth=case_expr)
+        )
         await session.commit()
 
 
