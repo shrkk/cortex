@@ -14,23 +14,48 @@ struct NotchContentView: View {
     @StateObject var vm: NotchViewModel
 
     var body: some View {
-        ZStack {
-            switch vm.contentType {
-            case .normal:
-                HStack(spacing: vm.spacing) {
-                    ShareView(vm: vm, type: .airdrop)
-                    TrayView(vm: vm)
+        ZStack(alignment: .bottom) {
+            // Original NotchDrop content — unchanged
+            ZStack {
+                switch vm.contentType {
+                case .normal:
+                    HStack(spacing: vm.spacing) {
+                        ShareView(vm: vm, type: .airdrop)
+                        TrayView(vm: vm)
+                    }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                case .menu:
+                    NotchMenuView(vm: vm)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                case .settings:
+                    NotchSettingsView(vm: vm)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
-                .transition(.scale(scale: 0.8).combined(with: .opacity))
-            case .menu:
-                NotchMenuView(vm: vm)
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-            case .settings:
-                NotchSettingsView(vm: vm)
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+            .animation(vm.animation, value: vm.contentType)
+
+            // Cortex overlay — course tab + status pill
+            VStack(spacing: 4) {
+                CortexCourseTab()
+                CortexStatusView()
+            }
+            .padding(.bottom, 8)
+        }
+        .onAppear {
+            // ⌘V paste handler — fires when notch window is key window
+            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                if event.modifierFlags.contains(.command),
+                   event.charactersIgnoringModifiers == "v" {
+                    #if CORTEX_ENABLED
+                    if CortexSettings.shared.enabled {
+                        CortexIngest.handleClipboard()
+                        return nil
+                    }
+                    #endif
+                }
+                return event
             }
         }
-        .animation(vm.animation, value: vm.contentType)
     }
 }
 

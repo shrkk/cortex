@@ -11,6 +11,7 @@ import SwiftUI
 struct NotchSettingsView: View {
     @StateObject var vm: NotchViewModel
     @StateObject var tvm: TrayDrop = .shared
+    @StateObject var cortexSettings = CortexSettings.shared
 
     var body: some View {
         VStack(spacing: vm.spacing) {
@@ -57,6 +58,21 @@ struct NotchSettingsView: View {
                     .frame(width: 200)
                 }
                 Spacer()
+            }
+
+            // Cortex settings
+            HStack {
+                Toggle("Enable Cortex Drop", isOn: $cortexSettings.enabled)
+                Spacer()
+                TextField("Backend URL", text: $cortexSettings.backendURL)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+                    .textFieldStyle(.plain)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .frame(width: 200, height: 28)
             }
         }
         .padding()

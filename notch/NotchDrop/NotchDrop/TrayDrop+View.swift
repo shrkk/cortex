@@ -5,6 +5,7 @@
 //  Created by 秋星桥 on 2024/7/8.
 //
 
+import AppKit
 import SwiftUI
 
 struct TrayView: View {
@@ -36,9 +37,19 @@ struct TrayView: View {
     var body: some View {
         panel
             .onDrop(of: [.data], isTargeted: $targeting) { providers in
-                DispatchQueue.global().async { tvm.load(providers) }
-                return true
+                #if CORTEX_ENABLED
+                if CortexSettings.shared.enabled {
+                    let handled = CortexIngest.handleProviders(providers)
+                    if handled { return true }
+                }
+                #endif
+                return originalHandleDrop(providers)
             }
+    }
+
+    private func originalHandleDrop(_ providers: [NSItemProvider]) -> Bool {
+        DispatchQueue.global().async { tvm.load(providers) }
+        return true
     }
 
     var panel: some View {

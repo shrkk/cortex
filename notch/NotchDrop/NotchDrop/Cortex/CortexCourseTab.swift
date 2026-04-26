@@ -31,7 +31,8 @@ final class CortexCourseTabState: ObservableObject {
     private init() {
         // Check Accessibility permission on init — log a warning if missing.
         // This is required for global keyboard monitors (⌘V paste).
-        let options: CFDictionary = [kAXTrustedCheckOptionPrompt: false] as CFDictionary
+        // "AXTrustedCheckOptionPrompt" is the raw CF string key value.
+        let options = ["AXTrustedCheckOptionPrompt": false] as CFDictionary
         let trusted = AXIsProcessTrustedWithOptions(options)
         if !trusted {
             print("[CortexCourseTabState] WARNING: Accessibility permission not granted. " +

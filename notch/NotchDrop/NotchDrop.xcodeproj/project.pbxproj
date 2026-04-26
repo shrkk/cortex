@@ -46,7 +46,7 @@
 		50EFDB522C3BF7B4002D3E0F /* Ext+NSImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EFDB512C3BF7B4002D3E0F /* Ext+NSImage.swift */; };
 		60AD62872C579F4400299297 /* NotchSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AD62862C579F4400299297 /* NotchSettingsView.swift */; };
 		CC000001CCCCCCCC00CC0003 /* CortexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC0002 /* CortexClient.swift */; };
-		CC000001CCCCCCCC00CC0005 /* CortexCourseTabState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC0004 /* CortexCourseTabState.swift */; };
+		CC000001CCCCCCCC00CC0005 /* CortexCourseTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC0004 /* CortexCourseTab.swift */; };
 		CC000001CCCCCCCC00CC0007 /* CortexIngest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC0006 /* CortexIngest.swift */; };
 		CC000001CCCCCCCC00CC0009 /* CortexSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC0008 /* CortexSettings.swift */; };
 		CC000001CCCCCCCC00CC000B /* CortexStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001CCCCCCCC00CC000A /* CortexStatusView.swift */; };
@@ -87,7 +87,7 @@
 		50EFDB512C3BF7B4002D3E0F /* Ext+NSImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ext+NSImage.swift"; sourceTree = "<group>"; };
 		60AD62862C579F4400299297 /* NotchSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSettingsView.swift; sourceTree = "<group>"; };
 		CC000001CCCCCCCC00CC0002 /* CortexClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexClient.swift; sourceTree = "<group>"; };
-		CC000001CCCCCCCC00CC0004 /* CortexCourseTabState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexCourseTabState.swift; sourceTree = "<group>"; };
+		CC000001CCCCCCCC00CC0004 /* CortexCourseTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexCourseTab.swift; sourceTree = "<group>"; };
 		CC000001CCCCCCCC00CC0006 /* CortexIngest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexIngest.swift; sourceTree = "<group>"; };
 		CC000001CCCCCCCC00CC0008 /* CortexSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexSettings.swift; sourceTree = "<group>"; };
 		CC000001CCCCCCCC00CC000A /* CortexStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CortexStatusView.swift; sourceTree = "<group>"; };
@@ -180,7 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				CC000001CCCCCCCC00CC0002 /* CortexClient.swift */,
-				CC000001CCCCCCCC00CC0004 /* CortexCourseTabState.swift */,
+				CC000001CCCCCCCC00CC0004 /* CortexCourseTab.swift */,
 				CC000001CCCCCCCC00CC0006 /* CortexIngest.swift */,
 				CC000001CCCCCCCC00CC0008 /* CortexSettings.swift */,
 				CC000001CCCCCCCC00CC000A /* CortexStatusView.swift */,
@@ -307,7 +307,7 @@
 				504381A82C3A926E000ED325 /* NotchViewModel.swift in Sources */,
 				5044EEA02C3B116000071C5C /* PublishedPersist.swift in Sources */,
 				CC000001CCCCCCCC00CC0003 /* CortexClient.swift in Sources */,
-				CC000001CCCCCCCC00CC0005 /* CortexCourseTabState.swift in Sources */,
+				CC000001CCCCCCCC00CC0005 /* CortexCourseTab.swift in Sources */,
 				CC000001CCCCCCCC00CC0007 /* CortexIngest.swift in Sources */,
 				CC000001CCCCCCCC00CC0009 /* CortexSettings.swift in Sources */,
 				CC000001CCCCCCCC00CC000B /* CortexStatusView.swift in Sources */,

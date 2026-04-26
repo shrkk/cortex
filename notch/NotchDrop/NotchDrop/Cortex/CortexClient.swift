@@ -22,13 +22,20 @@ final class CortexClient: ObservableObject {
         return URL(string: "\(base)/ingest")!
     }
 
+    // MARK: - Course ID Resolution Helper
+
+    /// Resolve a course ID, preferring the current session ID, then calling
+    /// CortexCourseTabState.resolve, falling back to 1.
+    private func resolveCourseId(hint: String) async -> Int {
+        if let id = CortexCourseTabState.shared.sessionCourseId { return id }
+        if let id = await CortexCourseTabState.shared.resolve(hint: hint) { return id }
+        return 1
+    }
+
     func sendFile(at url: URL) async {
         await setStatus(.sending(progress: 0.1))
         do {
-            let hint = url.lastPathComponent
-            let courseId = await CortexCourseTabState.shared.sessionCourseId
-                ?? (await CortexCourseTabState.shared.resolve(hint: hint))
-                ?? 1
+            let courseId = await resolveCourseId(hint: url.lastPathComponent)
             let data = try Data(contentsOf: url)
             let mime = mimeType(for: url)
             let kind: CortexKind = mime == "application/pdf" ? .pdf : .image
@@ -48,10 +55,7 @@ final class CortexClient: ObservableObject {
             return
         }
         do {
-            let hint = "pasted-image"
-            let courseId = await CortexCourseTabState.shared.sessionCourseId
-                ?? (await CortexCourseTabState.shared.resolve(hint: hint))
-                ?? 1
+            let courseId = await resolveCourseId(hint: "pasted-image")
             let filename = "pasted-\(UUID().uuidString).png"
             try await uploadMultipart(data: png,
                                       filename: filename,
@@ -67,9 +71,7 @@ final class CortexClient: ObservableObject {
     func sendURL(_ urlString: String) async {
         await setStatus(.sending(progress: 0.3))
         let hint = urlString.components(separatedBy: "/").last ?? urlString
-        let courseId = await CortexCourseTabState.shared.sessionCourseId
-            ?? (await CortexCourseTabState.shared.resolve(hint: hint))
-            ?? 1
+        let courseId = await resolveCourseId(hint: hint)
         var req = URLRequest(url: endpoint)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -85,10 +87,7 @@ final class CortexClient: ObservableObject {
 
     func sendText(_ text: String, title: String? = nil) async {
         await setStatus(.sending(progress: 0.3))
-        let hint = String(text.prefix(200))
-        let courseId = await CortexCourseTabState.shared.sessionCourseId
-            ?? (await CortexCourseTabState.shared.resolve(hint: hint))
-            ?? 1
+        let courseId = await resolveCourseId(hint: String(text.prefix(200)))
         var req = URLRequest(url: endpoint)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
