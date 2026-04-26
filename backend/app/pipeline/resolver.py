@@ -13,6 +13,7 @@ Phase 3 Wave 1 plan: 03-03-PLAN.md.
 from __future__ import annotations
 
 import hashlib
+import logging
 from typing import Any
 
 import anthropic
@@ -23,6 +24,8 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.models import Chunk, Concept, ConceptSource, ExtractionCache, Source
 from app.pipeline.extractor import MODEL_VERSION
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tool schema
@@ -239,11 +242,15 @@ async def _resolve_concept(
     """
     # 1) Embed the candidate (title + definition — Pitfall 4)
     embed_input = _embed_text(title, definition)
-    embed_resp = await openai_client.embeddings.create(
-        model="text-embedding-3-small",
-        input=[embed_input],
-    )
-    vec = embed_resp.data[0].embedding
+    try:
+        embed_resp = await openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=[embed_input],
+        )
+        vec = embed_resp.data[0].embedding
+    except Exception as exc:  # noqa: BLE001
+        _log.warning("Embedding failed for concept '%s': %s", title, exc)
+        raise
 
     # 2) Cosine nearest-neighbor query — COURSE SCOPED (RESOLVE-01)
     # Session is closed before any LLM call to avoid holding a connection open
