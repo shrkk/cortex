@@ -4,7 +4,7 @@ from typing import Optional
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIError as OpenAIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -64,12 +64,15 @@ async def match_course(hint: str, session: AsyncSession = Depends(get_session)):
         return None
 
     # Embed the hint text
-    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
-    embed_response = await openai_client.embeddings.create(
-        model="text-embedding-3-small",
-        input=hint,
-    )
-    hint_vector = embed_response.data[0].embedding
+    try:
+        openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+        embed_response = await openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=hint,
+        )
+        hint_vector = embed_response.data[0].embedding
+    except OpenAIError:
+        return None
 
     # Cosine similarity query via pgvector operator <=>
     # 1 - (embedding <=> hint_vec) = cosine similarity (pgvector returns cosine distance)
