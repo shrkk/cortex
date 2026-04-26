@@ -234,7 +234,9 @@ async def run_extraction(source_id: int) -> None:
                                 wrapped: dict = {"concepts": payload, "_questions": questions}
                             elif isinstance(payload, dict):
                                 wrapped = dict(payload)
-                                wrapped["_questions"] = questions
+                                existing_qs = wrapped.get("_questions") or []
+                                # Merge and deduplicate, preserving insertion order (WR-04)
+                                wrapped["_questions"] = list(dict.fromkeys(existing_qs + questions))
                             else:
                                 wrapped = {"concepts": [], "_questions": questions}
                             await session.execute(
