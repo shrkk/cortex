@@ -148,13 +148,20 @@ async def _create_new_concept(
     )
     session.add(concept)
     await session.flush()  # populate concept.id without committing the txn
-    session.add(
-        ConceptSource(
-            concept_id=concept.id,
-            source_id=source_id,
-            student_questions=list(student_questions) if student_questions else None,
+    existing_cs = await session.scalar(
+        sa.select(ConceptSource).where(
+            ConceptSource.concept_id == concept.id,
+            ConceptSource.source_id == source_id,
         )
     )
+    if existing_cs is None:
+        session.add(
+            ConceptSource(
+                concept_id=concept.id,
+                source_id=source_id,
+                student_questions=list(student_questions) if student_questions else None,
+            )
+        )
     await session.commit()
     # concept.id is set by the DB on flush; in unit tests with mock sessions it
     # may remain None because flush is a no-op — return 0 as a safe sentinel
@@ -188,13 +195,20 @@ async def _merge_into_existing(
         existing.examples = list(dict.fromkeys((existing.examples or []) + list(examples or [])))[:5]
     else:
         raise RuntimeError(f"Concept {row.id} not found during merge")
-    session.add(
-        ConceptSource(
-            concept_id=row.id,
-            source_id=source_id,
-            student_questions=list(student_questions) if student_questions else None,
+    existing_cs = await session.scalar(
+        sa.select(ConceptSource).where(
+            ConceptSource.concept_id == row.id,
+            ConceptSource.source_id == source_id,
         )
     )
+    if existing_cs is None:
+        session.add(
+            ConceptSource(
+                concept_id=row.id,
+                source_id=source_id,
+                student_questions=list(student_questions) if student_questions else None,
+            )
+        )
     await session.commit()
     return row.id
 
