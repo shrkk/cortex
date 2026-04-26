@@ -115,7 +115,7 @@ Cross-cutting constraints:
 **Plans**: 4 plans
 
 **Wave 0** *(TDD RED — test scaffolding + module skeletons)*
-- [ ] 03-01-PLAN.md — Test stubs (RED state) + extractor/resolver/edges module skeletons
+- [x] 03-01-PLAN.md — Test stubs (RED state) + extractor/resolver/edges module skeletons
 
 **Wave 1** *(parallel — depends on Wave 0)*
 - [ ] 03-02-PLAN.md — LLM Extraction stage (extractor.py, EXTRACT-01..05)
