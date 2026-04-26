@@ -50,7 +50,19 @@ async def _llm_tiebreaker(
     existing_definition: str,
     anthropic_client: anthropic.AsyncAnthropic,
 ) -> dict:
-    """Stub — Wave 1 implements forced tool_use call returning {same, reason}."""
+    """Stub — Wave 1 implements forced tool_use call returning {same, reason}.
+
+    Wave 1 implementation outline:
+      message = await anthropic_client.messages.create(
+          model="claude-sonnet-4-6",
+          max_tokens=256,
+          tools=[TIEBREAKER_TOOL],
+          tool_choice={"type": "tool", "name": "decide_merge"},
+          messages=[{"role": "user", "content": prompt}],
+      )
+      tool_block = next(b for b in message.content if b.type == "tool_use")
+      return tool_block.input   # {"same": bool, "reason": str}
+    """
     return {"same": False, "reason": "stub"}
 
 
