@@ -42,7 +42,7 @@ Progress: [████████████████████] 100% (P
 Phase 1: Infrastructure          [x] COMPLETE — 5/5 plans complete
 Phase 2: Ingest + Parsing + Notch [~] PLANNED — 8/8 plans ready
 Phase 3: Extraction, Resolution & Edges [~] PLANNED — 4/4 plans ready
-Phase 4: Flashcards, Struggle & Quiz [ ] Not started
+Phase 4: Flashcards, Struggle & Quiz [~] PLANNED — 4/4 plans ready
 Phase 5: Graph API               [ ] Not started
 Phase 6: Frontend                [ ] Not started
 Phase 7: Demo Readiness          [ ] Not started
