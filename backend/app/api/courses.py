@@ -197,7 +197,9 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> GraphResp
                 "concept_id": c.id,
                 "depth": c.depth,
                 "has_struggle_signals": bool(c.struggle_signals),
-                "struggle_signals": c.struggle_signals,
+                # Raw struggle_signals dict is intentionally excluded here.
+                # It may contain sensitive intermediate data and is unbounded.
+                # Use GET /concepts/{id}/signals for scoped access if needed.
                 "flashcard_count": 0,  # backfilled after flashcard pass below
             },
         })
