@@ -607,22 +607,25 @@ Note: The existing `FlashcardView.tsx` uses a simpler reveal approach (shows bac
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Theme: dark vs light**
    - What we know: `globals.css` implements a warm light theme (`--paper: #FAF7F2`). UI-SPEC.md specifies a dark theme (`bg-base: #1F1E1B`).
    - What's unclear: Is the existing light theme acceptable, or must the dark theme from UI-SPEC be implemented?
    - Recommendation: Flag for human confirmation before planning the CSS work; replacing the entire color system is a full-day task.
+   - **RESOLVED:** Dark theme confirmed per UI-SPEC.md; globals.css will be overridden to #1F1E1B base in plan 06-02.
 
 2. **source_count in graph payload**
    - What we know: Backend `GET /courses/{id}/graph` concept nodes do not include `source_count`. D-02 requires sizing by `source_count`.
    - What's unclear: Should Phase 6 add `source_count` to the backend graph endpoint, or use a fixed node size?
    - Recommendation: Add `source_count` to the backend graph endpoint as a Wave 0 task (involves a subquery or JOIN on `concept_sources`).
+   - **RESOLVED:** source_count added to backend graph endpoint concept node data in plan 06-01 (Task 1 Step 4) via ConceptSource subquery in get_course_graph endpoint.
 
 3. **shadcn Sheet vs custom drawer**
    - What we know: ReadingDrawer.tsx is fully implemented and matches D-06 spec. shadcn Sheet not installed.
    - What's unclear: Is the Radix accessibility behavior (focus trap, Escape key) required?
    - Recommendation: Keep ReadingDrawer if the existing implementation passes accessibility audit; add shadcn Sheet only if focus trap is explicitly needed.
+   - **RESOLVED:** Keep existing ReadingDrawer.tsx (adequate implementation of D-06); add shadcn Sheet only if focus trap is needed (not needed for this scope — single-user app with no accessibility requirement blocking).
 
 ---
 
