@@ -85,7 +85,7 @@ Cross-cutting constraints:
 - [x] 02-05-PLAN.md — Background pipeline + POST /ingest + dedup + courses.embedding backfill
 
 **Wave 4** *(depends on 02-04, 02-03)*
-- [ ] 02-06-PLAN.md — Swift Cortex module: CortexClient, CortexIngest, CortexSettings, CortexStatusView [notch-specialist]
+- [x] 02-06-PLAN.md — Swift Cortex module: CortexClient, CortexIngest, CortexSettings, CortexStatusView [notch-specialist]
 
 **Wave 5** *(depends on 02-06)*
 - [ ] 02-07-PLAN.md — CortexCourseTab + surgical edit + ⌘V handler [notch-specialist]
