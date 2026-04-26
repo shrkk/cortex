@@ -161,7 +161,25 @@ Cross-cutting constraints:
   3. `GET /courses/match?hint=backpropagation` returns `{course_id, title, confidence}` for the best-matching course; returns `null` when no course confidence exceeds 0.65
   4. `POST /courses` creates a course and returns it with an `id`; `GET /courses` returns all courses for user_id=1
   5. The graph endpoint includes flashcard nodes connected to their parent concept and quiz nodes connected to the course root
-**Plans**: TBD
+**Plans**: 4 plans
+
+**Wave 0** *(TDD RED — test scaffolding + schema skeletons)*
+- [ ] 05-01-PLAN.md — Test stubs (RED state) + graph/concept schemas + concepts.py skeleton
+
+**Wave 1** *(parallel — no shared files)*
+- [ ] 05-02-PLAN.md — GET /courses/{id}/graph + _build_graph_payload + /match consistency fix (GRAPH-01, GRAPH-02, GRAPH-03, GRAPH-05, GRAPH-06, GRAPH-07)
+- [ ] 05-03-PLAN.md — GET /concepts/{id} full implementation + router.py registration (GRAPH-04)
+
+**Wave 2** *(depends on Wave 1)*
+- [ ] 05-04-PLAN.md — Full test suite + curl smoke tests + human sign-off
+
+Cross-cutting constraints:
+- Route registration order: `/match` BEFORE `/{course_id}/graph` in courses.py — FastAPI matches in order
+- No embedding vectors in graph response — `_build_graph_payload` builds data dicts explicitly
+- All node IDs are prefixed strings: `"course-{id}"`, `"concept-{id}"`, `"flashcard-{id}"`, `"quiz-{id}"`
+- `definition` → `summary` rename applied at explicit constructor (not via from_attributes auto-mapping)
+- "contains" edges synthesized in Python from FK — the edges table has NO contains rows (EDGE-01)
+- N+1 prevention: flashcards and edges loaded with single IN queries across all concept_ids
 
 ### Phase 6: Frontend
 **Goal**: A student can open the web app, see their course graph with concept nodes colored by struggle signal, click a concept to read its details and launch flashcard review, generate and take a quiz, and see their library of ingested sources — all with correct empty states.
@@ -207,7 +225,7 @@ Cross-cutting constraints:
 | 2. Ingest + Parsing + Notch | 0/8 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/4 | Planned | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
-| 5. Graph API | 0/0 | Not started | - |
+| 5. Graph API | 0/4 | Planned | - |
 | 6. Frontend | 0/0 | Not started | - |
 | 7. Demo Readiness | 0/0 | Not started | - |
 
@@ -238,4 +256,4 @@ Cross-cutting constraints:
 ---
 
 *Roadmap created: 2026-04-25*
-*Last updated: 2026-04-25 — Phase 3 planning complete (4 plans across 3 waves; all EXTRACT/RESOLVE/EDGE requirements mapped)*
+*Last updated: 2026-04-25 — Phase 5 planning complete (4 plans across 3 waves; all GRAPH requirements mapped)*
