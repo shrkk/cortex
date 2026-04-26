@@ -2,7 +2,8 @@
 Cortex ingestion pipeline — 8 stages.
 
 Phase 2: stages 1-3 (parse, chunk, embed) are real.
-Stages 4-8 (extract, resolve, edges, flashcards, signals) are no-op stubs.
+Phase 3: stages 4-6 (extract, resolve, edges) are now real (Plans 03-02, 03-03, 03-04).
+Stages 7-8 (flashcards, signals) remain no-op stubs until Phase 4.
 
 Each stage opens its own AsyncSessionLocal session (session-per-stage pattern).
 Never pass a session across stage boundaries — connection pool exhaustion.
@@ -31,9 +32,9 @@ async def run_pipeline(source_id: int, force: bool = False) -> None:
         await _stage_set_processing(source_id)
         await _stage_parse_and_chunk(source_id, force=force)
         await _stage_embed(source_id)
-        await _stage_extract_stub(source_id)
-        await _stage_resolve_stub(source_id)
-        await _stage_edges_stub(source_id)
+        await _stage_extract(source_id)
+        await _stage_resolve(source_id)
+        await _stage_edges(source_id)
         await _stage_flashcards_stub(source_id)
         await _stage_signals_stub(source_id)
         await _stage_set_done(source_id)
@@ -189,25 +190,38 @@ async def _stage_embed(source_id: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Stage 4–8: Stubs (Phase 3/4 will replace these)
+# Stage 4: Concept extraction (Phase 3, Plan 03-02)
 # ---------------------------------------------------------------------------
 
-async def _stage_extract_stub(source_id: int) -> None:
-    """Extraction stub — checks extraction_cache (PIPE-04) but returns None (Phase 2)."""
-    # Cache check is a no-op in Phase 2: no chunks have been processed yet
-    # Phase 3 will implement real extraction and populate extraction_cache
-    pass
+async def _stage_extract(source_id: int) -> None:
+    """Phase 3 Stage 4 — concept extraction. See app.pipeline.extractor."""
+    from app.pipeline.extractor import run_extraction
+    await run_extraction(source_id)
 
 
-async def _stage_resolve_stub(source_id: int) -> None:
-    """Resolution stub — Phase 3 will merge duplicate concepts per course."""
-    pass
+# ---------------------------------------------------------------------------
+# Stage 5: Concept resolution (Phase 3, Plan 03-03)
+# ---------------------------------------------------------------------------
+
+async def _stage_resolve(source_id: int) -> None:
+    """Phase 3 Stage 5 — concept resolution. See app.pipeline.resolver."""
+    from app.pipeline.resolver import run_resolution
+    await run_resolution(source_id)
 
 
-async def _stage_edges_stub(source_id: int) -> None:
-    """Edge inference stub — Phase 3 will create co-occurrence and prerequisite edges."""
-    pass
+# ---------------------------------------------------------------------------
+# Stage 6: Edge inference + BFS depth (Phase 3, Plan 03-04)
+# ---------------------------------------------------------------------------
 
+async def _stage_edges(source_id: int) -> None:
+    """Phase 3 Stage 6 — edge inference + BFS depth. See app.pipeline.edges."""
+    from app.pipeline.edges import run_edges
+    await run_edges(source_id)
+
+
+# ---------------------------------------------------------------------------
+# Stage 7–8: Stubs (Phase 4 will replace these)
+# ---------------------------------------------------------------------------
 
 async def _stage_flashcards_stub(source_id: int) -> None:
     """Flashcard generation stub — Phase 4 will create flashcard nodes per concept."""
