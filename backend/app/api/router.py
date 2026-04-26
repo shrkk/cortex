@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api import health, courses, ingest, concepts, quiz
+from app.api import health, courses, ingest, concepts, quiz, sources
 
 router = APIRouter()
 
@@ -9,3 +9,4 @@ router.include_router(courses.router, prefix="/courses", tags=["courses"])
 router.include_router(ingest.router, prefix="/ingest", tags=["ingest"])
 router.include_router(concepts.router, prefix="/concepts", tags=["concepts"])
 router.include_router(quiz.router, prefix="/quiz", tags=["quiz"])
+router.include_router(sources.router, prefix="/sources", tags=["sources"])

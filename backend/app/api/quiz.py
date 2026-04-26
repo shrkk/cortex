@@ -22,12 +22,13 @@ import random
 import anthropic
 import sqlalchemy as sa
 import sqlalchemy.orm.attributes as _orm_attrs
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 import app.core.config as _config
-from app.core.database import AsyncSessionLocal
+from app.core.database import AsyncSessionLocal, get_session
 from app.models.models import Concept, ConceptSource, Quiz
 from app.schemas.quiz import AnswerRequest, AnswerResponse, QuizCreate, QuizResponse
 
@@ -292,6 +293,29 @@ async def create_quiz(body: QuizCreate):
         id=quiz_id,
         course_id=body.course_id,
         questions=_strip_reference_answers(questions),
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /quiz/{quiz_id} — fetch quiz by ID for quiz page initial load (UI-08)
+# ---------------------------------------------------------------------------
+
+@router.get("/{quiz_id}", response_model=QuizResponse)
+async def get_quiz(quiz_id: int, session: AsyncSession = Depends(get_session)):
+    """Return a quiz with questions (reference_answer stripped) by quiz ID.
+
+    Security: reference_answer is stripped via _strip_reference_answers before returning (T-06-01-02).
+    """
+    result = await session.execute(
+        sa.select(Quiz).where(Quiz.id == quiz_id)
+    )
+    quiz = result.scalar_one_or_none()
+    if quiz is None:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    return QuizResponse(
+        id=quiz.id,
+        course_id=quiz.course_id,
+        questions=_strip_reference_answers(quiz.questions or []),
     )
 
 

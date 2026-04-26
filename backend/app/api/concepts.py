@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.models.models import Concept, ConceptSource, Course, Flashcard, Source
-from app.schemas.concepts import ConceptDetailResponse, SourceCitation
+from app.schemas.concepts import ConceptDetailResponse, FlashcardResponse, SourceCitation
 
 router = APIRouter()
 
@@ -86,3 +86,33 @@ async def get_concept_detail(
         struggle_signals=concept.struggle_signals,
         depth=concept.depth,
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /concepts/{concept_id}/flashcards — flashcard list for flip mode (UI-06)
+# ---------------------------------------------------------------------------
+
+@router.get("/{concept_id}/flashcards", response_model=list[FlashcardResponse])
+async def list_concept_flashcards(
+    concept_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """Return all flashcards for a concept. Ownership check via Course.user_id=1 JOIN.
+
+    Security: 404 on missing or unauthorized concept to prevent ID enumeration (T-06-01-03).
+    """
+    # Ownership check: concept must belong to a course of user_id=1
+    ownership = await session.execute(
+        sa.select(Concept)
+        .join(Course, Concept.course_id == Course.id)
+        .where(Concept.id == concept_id, Course.user_id == 1)
+    )
+    if ownership.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Concept not found")
+
+    result = await session.execute(
+        sa.select(Flashcard)
+        .where(Flashcard.concept_id == concept_id)
+        .order_by(Flashcard.id)
+    )
+    return result.scalars().all()

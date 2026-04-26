@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -23,3 +25,14 @@ class ConceptDetailResponse(BaseModel):
     struggle_signals: dict | None = None
     depth: int | None = None
     # NOTE: no model_config from_attributes — explicit construction in endpoint handles rename
+
+
+class FlashcardResponse(BaseModel):
+    id: int
+    concept_id: int
+    front: str
+    back: str
+    card_type: str   # "definition" | "application" | "gotcha" | "compare"
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

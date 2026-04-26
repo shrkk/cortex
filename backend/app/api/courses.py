@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.models.models import Course, Concept, Flashcard, Quiz, Edge
-from app.schemas.courses import CourseCreate, CourseMatchResponse, CourseResponse
+from app.models.models import Course, Concept, ConceptSource, Flashcard, Quiz, Edge, Source
+from app.schemas.courses import CourseCreate, CourseMatchResponse, CourseResponse, SourceResponse
 from app.schemas.graph import GraphResponse
 
 router = APIRouter()
@@ -21,10 +21,54 @@ router = APIRouter()
 
 @router.get("", response_model=list[CourseResponse])
 async def list_courses(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(
-        sa.select(Course).where(Course.user_id == 1).order_by(Course.created_at)
+    # Correlated subquery: total concepts per course
+    concept_count_sq = (
+        sa.select(sa.func.count())
+        .select_from(Concept)
+        .where(Concept.course_id == Course.id)
+        .correlate(Course)
+        .scalar_subquery()
     )
-    return result.scalars().all()
+    # Correlated subquery: concepts with non-empty struggle_signals dict
+    # struggle_signals is a JSONB column; non-null and non-empty dict = active struggle
+    struggle_count_sq = (
+        sa.select(sa.func.count())
+        .select_from(Concept)
+        .where(
+            Concept.course_id == Course.id,
+            Concept.struggle_signals.isnot(None),
+            sa.cast(Concept.struggle_signals, sa.String) != "{}",
+        )
+        .correlate(Course)
+        .scalar_subquery()
+    )
+
+    result = await session.execute(
+        sa.select(
+            Course,
+            concept_count_sq.label("concept_count"),
+            struggle_count_sq.label("active_struggle_count"),
+        )
+        .where(Course.user_id == 1)
+        .order_by(Course.created_at)
+    )
+    rows = result.all()
+
+    courses_out = []
+    for row in rows:
+        course_obj = row[0]
+        c_count = row[1] or 0
+        s_count = row[2] or 0
+        courses_out.append(CourseResponse(
+            id=course_obj.id,
+            user_id=course_obj.user_id,
+            title=course_obj.title,
+            description=course_obj.description,
+            created_at=course_obj.created_at,
+            concept_count=c_count,
+            active_struggle_count=s_count,
+        ))
+    return courses_out
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +145,48 @@ async def match_course(hint: str, session: AsyncSession = Depends(get_session)):
 
 
 # ---------------------------------------------------------------------------
+# GET /courses/{course_id} — single course by ID
+# ---------------------------------------------------------------------------
+
+@router.get("/{course_id}", response_model=CourseResponse)
+async def get_course(
+    course_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    result = await session.execute(
+        sa.select(Course).where(Course.id == course_id, Course.user_id == 1)
+    )
+    course = result.scalar_one_or_none()
+    if course is None:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+
+# ---------------------------------------------------------------------------
+# GET /courses/{course_id}/sources — sources list for polling trigger
+# ---------------------------------------------------------------------------
+
+@router.get("/{course_id}/sources", response_model=list[SourceResponse])
+async def list_course_sources(
+    course_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    # Ownership check: verify course belongs to user_id=1
+    course_check = await session.execute(
+        sa.select(Course.id).where(Course.id == course_id, Course.user_id == 1)
+    )
+    if course_check.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    result = await session.execute(
+        sa.select(Source)
+        .where(Source.course_id == course_id)
+        .order_by(Source.created_at.desc())
+    )
+    return result.scalars().all()
+
+
+# ---------------------------------------------------------------------------
 # GET /courses/{course_id}/graph — assemble full graph payload
 # ---------------------------------------------------------------------------
 
@@ -156,10 +242,21 @@ async def get_course_graph(
     else:
         edges = []
 
-    return _build_graph_payload(course, concepts, flashcards, quiz, edges)
+    # 6. source_count per concept (D-02 node sizing) — single IN query on concept_sources
+    source_count_by_concept: dict[int, int] = {}
+    if concept_ids:
+        sc_result = await session.execute(
+            sa.select(ConceptSource.concept_id, sa.func.count().label("cnt"))
+            .where(ConceptSource.concept_id.in_(concept_ids))
+            .group_by(ConceptSource.concept_id)
+        )
+        for row in sc_result.all():
+            source_count_by_concept[row.concept_id] = row.cnt
+
+    return _build_graph_payload(course, concepts, flashcards, quiz, edges, source_count_by_concept)
 
 
-def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> GraphResponse:
+def _build_graph_payload(course, concepts, flashcards, quiz, edges, source_count_by_concept: dict[int, int] | None = None) -> GraphResponse:
     """Assemble GraphResponse from ORM objects.
 
     Rules:
@@ -201,6 +298,7 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges) -> GraphResp
                 # It may contain sensitive intermediate data and is unbounded.
                 # Use GET /concepts/{id}/signals for scoped access if needed.
                 "flashcard_count": 0,  # backfilled after flashcard pass below
+                "source_count": (source_count_by_concept or {}).get(c.id, 1),
             },
         })
         graph_edges.append({
