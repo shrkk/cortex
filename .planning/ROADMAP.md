@@ -12,7 +12,7 @@
 - [x] **Phase 1: Infrastructure** — Postgres + pgvector running, schema migrated, health endpoint live, seed data loaded, 5/5 tests green
 - [ ] **Phase 2: Ingest + Parsing + Notch** — Files dropped into notch arrive at backend as parsed chunks with embeddings
 - [x] **Phase 3: Extraction, Resolution & Edges** — Concepts extracted, deduplicated per course, edges inferred, depth computed
-- [ ] **Phase 4: Flashcards, Struggle & Quiz** — Flashcard nodes generated, struggle signals detected, quiz endpoint live
+- [x] **Phase 4: Flashcards, Struggle & Quiz** — Flashcard nodes generated, struggle signals detected, quiz endpoint live
 - [ ] **Phase 5: Graph API** — All API contracts stable and returning correct graph payloads
 - [ ] **Phase 6: Frontend** — Graph, flashcard, quiz, library, and dashboard views functional
 - [ ] **Phase 7: Demo Readiness** — Seed data loaded with variance, README complete, all acceptance tests pass
