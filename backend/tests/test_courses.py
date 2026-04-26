@@ -105,30 +105,36 @@ async def test_match_returns_null_when_no_openai_key(client):
 
 async def test_match_returns_null_when_confidence_below_threshold(client):
     """GET /courses/match returns null when best confidence < 0.65."""
+    from app.main import app
+
     mock_embed_response = MagicMock()
     mock_embed_response.data = [MagicMock(embedding=[0.1] * 1536)]
 
     mock_row = MagicMock()
     mock_row.confidence = 0.64  # below threshold
 
-    with patch("app.api.courses.settings") as mock_settings, \
-         patch("app.api.courses.AsyncOpenAI") as mock_openai_cls, \
-         patch("app.api.courses.AsyncSessionLocal") as mock_session_cls:
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = mock_row
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
-        mock_settings.openai_api_key = "sk-test"
+    async def override_get_session():
+        yield mock_session
 
-        mock_client = AsyncMock()
-        mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
-        mock_openai_cls.return_value = mock_client
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        with patch("app.api.courses.settings") as mock_settings, \
+             patch("app.api.courses.AsyncOpenAI") as mock_openai_cls:
 
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.fetchone.return_value = mock_row
-        mock_session.execute = AsyncMock(return_value=mock_result)
-        mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_settings.openai_api_key = "sk-test"
 
-        response = await client.get("/courses/match?hint=machine+learning")
+            mock_client = AsyncMock()
+            mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
+            mock_openai_cls.return_value = mock_client
+
+            response = await client.get("/courses/match?hint=machine+learning")
+    finally:
+        app.dependency_overrides.pop(get_session, None)
 
     assert response.status_code == 200
     assert response.json() is None
@@ -136,6 +142,8 @@ async def test_match_returns_null_when_confidence_below_threshold(client):
 
 async def test_match_returns_course_when_confidence_at_threshold(client):
     """GET /courses/match returns course when confidence == 0.65."""
+    from app.main import app
+
     mock_embed_response = MagicMock()
     mock_embed_response.data = [MagicMock(embedding=[0.1] * 1536)]
 
@@ -144,24 +152,28 @@ async def test_match_returns_course_when_confidence_at_threshold(client):
     mock_row.id = 42
     mock_row.title = "CS 229"
 
-    with patch("app.api.courses.settings") as mock_settings, \
-         patch("app.api.courses.AsyncOpenAI") as mock_openai_cls, \
-         patch("app.api.courses.AsyncSessionLocal") as mock_session_cls:
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = mock_row
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
-        mock_settings.openai_api_key = "sk-test"
+    async def override_get_session():
+        yield mock_session
 
-        mock_client = AsyncMock()
-        mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
-        mock_openai_cls.return_value = mock_client
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        with patch("app.api.courses.settings") as mock_settings, \
+             patch("app.api.courses.AsyncOpenAI") as mock_openai_cls:
 
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.fetchone.return_value = mock_row
-        mock_session.execute = AsyncMock(return_value=mock_result)
-        mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_settings.openai_api_key = "sk-test"
 
-        response = await client.get("/courses/match?hint=machine+learning")
+            mock_client = AsyncMock()
+            mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
+            mock_openai_cls.return_value = mock_client
+
+            response = await client.get("/courses/match?hint=machine+learning")
+    finally:
+        app.dependency_overrides.pop(get_session, None)
 
     assert response.status_code == 200
     data = response.json()
@@ -173,27 +185,33 @@ async def test_match_returns_course_when_confidence_at_threshold(client):
 
 async def test_match_returns_null_when_no_rows(client):
     """GET /courses/match returns null when no courses have embeddings (fetchone returns None)."""
+    from app.main import app
+
     mock_embed_response = MagicMock()
     mock_embed_response.data = [MagicMock(embedding=[0.1] * 1536)]
 
-    with patch("app.api.courses.settings") as mock_settings, \
-         patch("app.api.courses.AsyncOpenAI") as mock_openai_cls, \
-         patch("app.api.courses.AsyncSessionLocal") as mock_session_cls:
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = None  # no courses with embeddings
+    mock_session.execute = AsyncMock(return_value=mock_result)
 
-        mock_settings.openai_api_key = "sk-test"
+    async def override_get_session():
+        yield mock_session
 
-        mock_client = AsyncMock()
-        mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
-        mock_openai_cls.return_value = mock_client
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        with patch("app.api.courses.settings") as mock_settings, \
+             patch("app.api.courses.AsyncOpenAI") as mock_openai_cls:
 
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.fetchone.return_value = None  # no courses with embeddings
-        mock_session.execute = AsyncMock(return_value=mock_result)
-        mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_settings.openai_api_key = "sk-test"
 
-        response = await client.get("/courses/match?hint=machine+learning")
+            mock_client = AsyncMock()
+            mock_client.embeddings.create = AsyncMock(return_value=mock_embed_response)
+            mock_openai_cls.return_value = mock_client
+
+            response = await client.get("/courses/match?hint=machine+learning")
+    finally:
+        app.dependency_overrides.pop(get_session, None)
 
     assert response.status_code == 200
     assert response.json() is None
