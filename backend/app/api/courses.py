@@ -8,7 +8,7 @@ from openai import AsyncOpenAI, APIError as OpenAIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import AsyncSessionLocal, get_session
+from app.core.database import get_session
 from app.models.models import Course, Concept, Flashcard, Quiz, Edge
 from app.schemas.courses import CourseCreate, CourseMatchResponse, CourseResponse
 from app.schemas.graph import GraphResponse
