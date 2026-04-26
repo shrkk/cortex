@@ -34,16 +34,17 @@ const nodeTypes: NodeTypes = {
 };
 
 // ── Edge styles per type ───────────────────────────────────────────────────────
+// Values match UI-SPEC.md §Edge Colors and Styles (dark palette)
 const EDGE_STYLE: Record<
   string,
   { stroke: string; strokeWidth: number; strokeDasharray?: string; opacity: number; arrow: boolean }
 > = {
-  contains:      { stroke: "var(--border-strong)", strokeWidth: 2.4, opacity: 0.85, arrow: false },
-  prerequisite:  { stroke: "var(--ink-muted)",     strokeWidth: 1.4, opacity: 0.85, arrow: true  },
-  co_occurrence: { stroke: "var(--ink-muted)",     strokeWidth: 1.0, strokeDasharray: "5 4", opacity: 0.55, arrow: false },
-  related:       { stroke: "var(--ink-muted)",     strokeWidth: 1.0, strokeDasharray: "1 4", opacity: 0.55, arrow: false },
-  flashcard_of:  { stroke: "var(--accent)",        strokeWidth: 1.0, strokeDasharray: "2 3", opacity: 0.65, arrow: false },
-  quiz_of:       { stroke: "var(--accent)",        strokeWidth: 1.4, opacity: 0.85, arrow: false },
+  contains:      { stroke: "rgba(255,255,255,0.25)", strokeWidth: 2.5, opacity: 1,    arrow: false },
+  prerequisite:  { stroke: "rgba(255,255,255,0.55)", strokeWidth: 1.5, opacity: 1,    arrow: true  },
+  co_occurrence: { stroke: "rgba(255,255,255,0.20)", strokeWidth: 1.0, strokeDasharray: "6 4", opacity: 1, arrow: false },
+  related:       { stroke: "rgba(255,255,255,0.15)", strokeWidth: 1.0, strokeDasharray: "2 4", opacity: 1, arrow: false },
+  flashcard_of:  { stroke: "rgba(255,255,255,0.15)", strokeWidth: 1.0, strokeDasharray: "2 3", opacity: 0.65, arrow: false },
+  quiz_of:       { stroke: "rgba(255,255,255,0.25)", strokeWidth: 1.5, opacity: 1,    arrow: false },
 };
 
 function CortexEdge({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps) {
@@ -127,7 +128,7 @@ export function GraphCanvas({
   onNodeClick,
 }: {
   graphData: GraphData | null | undefined;
-  onNodeClick?: (nodeId: string, nodeType: string) => void;
+  onNodeClick?: (nodeId: string, nodeType: string, nodeData?: Record<string, unknown>) => void;
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -147,7 +148,7 @@ export function GraphCanvas({
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      onNodeClick?.(node.id, node.type ?? "concept");
+      onNodeClick?.(node.id, node.type ?? "concept", node.data as Record<string, unknown>);
     },
     [onNodeClick]
   );
@@ -172,7 +173,7 @@ export function GraphCanvas({
           variant={BackgroundVariant.Dots}
           gap={28}
           size={1}
-          color="rgba(31,30,27,.06)"
+          color="rgba(255,255,255,0.06)"
         />
         <Controls />
 
@@ -193,7 +194,7 @@ function Legend() {
         display: "flex",
         gap: 14,
         padding: "10px 14px",
-        background: "rgba(253,251,247,.85)",
+        background: "rgba(20,18,15,0.90)",
         backdropFilter: "blur(12px)",
         border: "1px solid var(--border)",
         borderRadius: 8,

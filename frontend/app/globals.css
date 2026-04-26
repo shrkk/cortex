@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Cortex Design System — tokens
+   ============================================================ */
+:root {
+  /* Surfaces — dark Cortex palette (UI-SPEC §Color) */
+  --paper:           #1F1E1B;   /* bg-base per UI-SPEC */
+  --paper-deep:      #14120F;   /* bg-panel per UI-SPEC */
+  --surface:         #14120F;   /* bg-panel (cards, panels) */
+  --surface-hover:   rgba(255,255,255,0.04);  /* surface-hover per UI-SPEC */
+  --surface-sunken:  #0E0D0B;   /* deeper than bg-panel */
+
+  /* Borders */
+  --border:          rgba(255,255,255,0.06);  /* border-subtle per UI-SPEC */
+  --border-strong:   rgba(255,255,255,0.15);  /* node border per UI-SPEC */
+  --border-soft:     rgba(255,255,255,0.04);
+
+  /* Text */
+  --ink:             #FAF7F2;   /* text-primary per UI-SPEC */
+  --ink-soft:        #F2EDE3;   /* text-secondary per UI-SPEC */
+  --ink-muted:       rgba(242,237,227,0.50);  /* text-muted (50% opacity) */
+  --ink-faint:       #9A9388;   /* idle-muted (unchanged) */
+
+  /* Accent — unchanged; already match UI-SPEC */
+  --accent:          #C96442;
+  --accent-hover:    #B85838;
+  --accent-press:    #A54E31;
+  --accent-soft:     rgba(201,100,66,0.15);   /* adjust for dark bg */
+  --accent-ink:      #FAF7F2;
+
+  /* Mastery / state — unchanged */
+  --mastery-high:       #6B8E5A;
+  --mastery-high-soft:  rgba(107,142,90,0.15);
+  --mastery-mid:        #C18A3F;
+  --mastery-mid-soft:   rgba(193,138,63,0.15);
+  --mastery-low:        #B5604A;
+  --mastery-low-soft:   rgba(181,96,74,0.15);
+
+  --success:      var(--mastery-high);
+  --success-soft: var(--mastery-high-soft);
+  --warning:      var(--mastery-mid);
+  --warning-soft: var(--mastery-mid-soft);
+  --danger:       var(--mastery-low);
+  --danger-soft:  var(--mastery-low-soft);
+  --info:         #5B7C99;
+  --info-soft:    rgba(91,124,153,0.15);
+
+  /* Highlights — amber tint for gotcha text */
+  --highlight-bg:  rgba(193,138,63,0.20);   /* amber tint for dark bg */
+  --highlight-bar: #C18A3F;
+
+  /* Shadows — updated for dark bg */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.20);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.20);
+  --shadow-md: 0 1px 2px rgba(0,0,0,0.20), 0 8px 24px rgba(0,0,0,0.30);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,0.20), 0 16px 48px rgba(0,0,0,0.40);
+  --backdrop:  rgba(0,0,0,0.60);
+
+  /* Radius — unchanged */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-pill: 999px;
+
+  /* Layout — unchanged */
+  --measure-prose: 65ch;
+  --container-max: 1280px;
+  --topbar-h:      56px;
+  --sidebar-w:     240px;
+  --drawer-w:      480px;
+
+  /* Motion — unchanged */
+  --ease:     cubic-bezier(0.2, 0.6, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur:      200ms;
+  --dur-slow: 300ms;
+
+  /* Fonts — unchanged */
+  --font-serif: "Source Serif 4", "Tiempos Text", Georgia, serif;
+  --font-sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  color: var(--ink-soft);
+  font-weight: 500;
+  margin: 0;
+}
+
+h4 {
+  font-weight: 600;
+  margin: 0;
+}
+
+p { margin: 0; max-width: var(--measure-prose); }
+
+a {
+  color: var(--accent);
+  text-decoration-color: color-mix(in oklch, var(--accent) 40%, transparent);
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--dur) var(--ease);
+}
+a:hover { text-decoration-color: var(--accent); }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection { background: var(--highlight-bg); color: var(--ink); }
+
+/* Scrollbars */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--ink-muted) 30%, transparent);
+  border-radius: var(--radius-pill);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--ink-muted) 50%, transparent);
+}
+
+/* ============================================================
+   Animations
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes graphPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(0.85); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ============================================================
+   React Flow overrides — match dark design tokens
+   ============================================================ */
+.react-flow__background { background: var(--paper) !important; }
+.react-flow__controls button {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--ink-muted) !important;
+}
+.react-flow__controls button:hover {
+  background: var(--surface-hover) !important;
+}
+.react-flow__minimap { border: 1px solid var(--border) !important; }
+
+/* ============================================================
+   Flashcard 3D flip (UI-SPEC §Flashcard Flip Mode)
+   ============================================================ */
+.flashcard-container {
+  perspective: 1000px;
+}
+.flashcard-inner {
+  transform-style: preserve-3d;
+  transition: transform 400ms var(--ease);
+  position: relative;
+}
+.flashcard-inner.flipped {
+  transform: rotateY(180deg);
+}
+.flashcard-front,
+.flashcard-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+}
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+/* ============================================================
+   Struggle signal pulsing ring (UI-SPEC §Node Fill Colors)
+   ============================================================ */
+@keyframes cortex-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
