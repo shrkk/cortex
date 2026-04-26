@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ReactFlowProvider } from "@xyflow/react";
 import { AppShell } from "@/components/AppShell";
@@ -13,6 +14,7 @@ const fetcher = (url: string) => apiFetch<unknown>(url);
 
 export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
 
   const { data: course } = useSWR<Course>(`/courses/${id}`, fetcher as any);
@@ -43,12 +45,15 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
   const graph = liveGraph ?? graphData;
 
-  const handleNodeClick = (nodeId: string, nodeType: string) => {
+  const handleNodeClick = (nodeId: string, nodeType: string, nodeData?: Record<string, unknown>) => {
     if (nodeType === "concept") {
-      const numId = parseInt(nodeId, 10);
-      if (!isNaN(numId)) setSelectedConceptId(numId);
+      const conceptId = (nodeData?.concept_id as number) ?? parseInt(nodeId.replace("concept-", ""), 10);
+      if (!isNaN(conceptId)) setSelectedConceptId(conceptId);
     }
-    // quiz node → navigate (handled by link in node or here)
+    if (nodeType === "quiz") {
+      const quizId = nodeData?.quiz_id as number | undefined;
+      if (quizId) router.push(`/quiz/${quizId}`);
+    }
   };
 
   return (
@@ -79,13 +84,38 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {/* Graph canvas */}
-      <ReactFlowProvider>
-        {graph ? (
-          <GraphCanvas graphData={graph} onNodeClick={handleNodeClick} />
-        ) : (
-          <GraphEmpty />
+      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+        <ReactFlowProvider>
+          {graph ? (
+            <GraphCanvas graphData={graph} onNodeClick={handleNodeClick} />
+          ) : (
+            <GraphEmpty />
+          )}
+        </ReactFlowProvider>
+
+        {/* Updating indicator while sources are still processing (UI-SPEC §Graph Polling) */}
+        {hasPending && (
+          <div style={{
+            position: "absolute", bottom: 70, left: 20,
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 12, color: "var(--ink-muted)",
+            zIndex: 10,
+            background: "rgba(20,18,15,0.85)",
+            backdropFilter: "blur(8px)",
+            padding: "6px 10px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border)",
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: "var(--mastery-mid)",
+              animation: "pulse 1.5s ease-in-out infinite",
+              display: "inline-block",
+            }} />
+            Updating…
+          </div>
         )}
-      </ReactFlowProvider>
+      </div>
 
       {/* Reading drawer */}
       <ReadingDrawer
