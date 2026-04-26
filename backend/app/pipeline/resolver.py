@@ -177,10 +177,17 @@ async def _merge_into_existing(
     Dedup via dict.fromkeys preserves insertion order.
     """
     existing = await session.get(Concept, row.id)
+    if existing is None:
+        # Concept was evicted from identity map — reload it explicitly
+        existing = await session.scalar(
+            sa.select(Concept).where(Concept.id == row.id)
+        )
     if existing is not None:
         existing.key_points = list(dict.fromkeys((existing.key_points or []) + list(key_points or [])))[:10]
         existing.gotchas = list(dict.fromkeys((existing.gotchas or []) + list(gotchas or [])))[:5]
         existing.examples = list(dict.fromkeys((existing.examples or []) + list(examples or [])))[:5]
+    else:
+        raise RuntimeError(f"Concept {row.id} not found during merge")
     session.add(
         ConceptSource(
             concept_id=row.id,
