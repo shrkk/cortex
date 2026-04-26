@@ -137,6 +137,10 @@ async def _stage_parse_and_chunk(source_id: int, force: bool = False) -> None:
         elif source.source_type == "text" and source.raw_text:
             chunks_data, title = await parse_text(source.raw_text, source.title)
 
+        elif source.source_type == "chat_log" and source.raw_text:
+            # chat_log: treat raw_text as plain text; questions extracted in _stage_extract
+            chunks_data, title = await parse_text(source.raw_text, source.title)
+
         # Update source title if not set
         if not source.title and title:
             await session.execute(
