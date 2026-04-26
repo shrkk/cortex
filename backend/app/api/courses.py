@@ -4,7 +4,7 @@ from typing import Optional
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
-from openai import AsyncOpenAI, APIError as OpenAIError
+from openai import AsyncOpenAI, APIError as OpenAIError, APIConnectionError, APITimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -71,7 +71,7 @@ async def match_course(hint: str, session: AsyncSession = Depends(get_session)):
             input=hint,
         )
         hint_vector = embed_response.data[0].embedding
-    except OpenAIError:
+    except (OpenAIError, APIConnectionError, APITimeoutError):
         return None
 
     # Cosine similarity query via pgvector operator <=>
