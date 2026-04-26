@@ -2,92 +2,72 @@ import SwiftUI
 
 struct CortexStatusView: View {
     @ObservedObject var client = CortexClient.shared
+    @State private var pulsing = false
+
+    // Design tokens — dark pill palette (per Cortex Design System)
+    private static let pillBg   = Color(red: 0.122, green: 0.118, blue: 0.110) // #1F1E1B
+    private static let pillFg   = Color(red: 0.980, green: 0.969, blue: 0.949) // #FAF7F2
+    private static let dotIdle  = Color(red: 0.604, green: 0.576, blue: 0.533) // #9A9388
+    private static let dotSend  = Color(red: 0.757, green: 0.541, blue: 0.247) // #C18A3F amber
+    private static let dotSent  = Color(red: 0.420, green: 0.557, blue: 0.353) // #6B8E5A moss
+    private static let dotError = Color(red: 0.710, green: 0.376, blue: 0.290) // #B5604A terracotta
 
     private var reduceMotion: Bool {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
     var body: some View {
-        HStack(spacing: 4) {
-            iconForStatus
-            Text(stateLabel)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.white.opacity(0.90))
+        HStack(spacing: 8) {
+            dot
+            Text(label)
+                .font(.system(size: 11.5, design: .monospaced))
+                .foregroundStyle(Self.pillFg)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(background)
-        .overlay(
-            Capsule()
-                .strokeBorder(Color.white.opacity(successBorderOpacity), lineWidth: 0.5)
-        )
+        .padding(.leading, 10)
+        .padding(.trailing, 12)
+        .padding(.vertical, 5)
+        .background(Self.pillBg.opacity(0.92))
         .clipShape(Capsule())
-        .opacity(client.status == .idle ? 0 : 1)
-        .animation(reduceMotion ? nil : exitAnimation, value: client.status == .idle)
-        .animation(reduceMotion ? nil : entryAnimation, value: client.status != .idle)
-        .accessibilityLabel("Cortex status: \(stateLabel)")
+        .shadow(color: .black.opacity(0.20), radius: 1, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 8)
+        .accessibilityLabel("Cortex status: \(label)")
     }
 
-    @ViewBuilder private var iconForStatus: some View {
+    @ViewBuilder private var dot: some View {
+        Circle()
+            .fill(dotColor)
+            .frame(width: 8, height: 8)
+            .opacity(isSending && !reduceMotion ? (pulsing ? 0.45 : 1.0) : 1.0)
+            .animation(
+                isSending && !reduceMotion
+                    ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
+                    : .linear(duration: 0),
+                value: pulsing
+            )
+            .onChange(of: isSending) { _, sending in pulsing = sending }
+            .onAppear { pulsing = isSending }
+    }
+
+    private var isSending: Bool {
+        if case .sending = client.status { return true }
+        return false
+    }
+
+    private var dotColor: Color {
         switch client.status {
-        case .idle:
-            EmptyView()
-        case .sending:
-            Image(systemName: "arrow.up.circle")
-                .font(.system(size: 12))
-                .foregroundColor(.white)
-        case .success:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 12))
-                .foregroundColor(Color(nsColor: .systemGreen))
-        case .error:
-            Image(systemName: "exclamationmark.circle.fill")
-                .font(.system(size: 12))
-                .foregroundColor(.white)
+        case .idle:    return Self.dotIdle
+        case .sending: return Self.dotSend
+        case .success: return Self.dotSent
+        case .error:   return Self.dotError
         }
     }
 
-    private var stateLabel: String {
+    private var label: String {
         switch client.status {
-        case .idle:
-            return ""
-        case .sending:
-            return "Sending to Cortex…"
-        case .success(let m):
-            return m
-        case .error:
-            return "Upload failed — check settings"
+        case .idle:           return "Cortex"
+        case .sending:        return "Sending to Cortex\u{2026}"
+        case .success(let m): return m
+        case .error:          return "Error \u{2014} retry"
         }
-    }
-
-    private var background: Color {
-        switch client.status {
-        case .idle:
-            return .clear
-        case .sending:
-            // Cortex Indigo #6366F1 at 85% opacity
-            return Color(red: 0.388, green: 0.400, blue: 0.945).opacity(0.85)
-        case .success:
-            // systemGreen at 15% opacity (border adds the definition)
-            return Color(nsColor: .systemGreen).opacity(0.15)
-        case .error:
-            // systemRed at 85% opacity
-            return Color(nsColor: .systemRed).opacity(0.85)
-        }
-    }
-
-    private var successBorderOpacity: Double {
-        if case .success = client.status { return 1.0 }
-        return 0.0
-    }
-
-    // Entry: spring slide-down from top + fade-in
-    private var entryAnimation: Animation {
-        .spring(response: 0.3, dampingFraction: 0.7)
-    }
-
-    // Exit: ease-out fade
-    private var exitAnimation: Animation {
-        .easeOut(duration: 0.25)
     }
 }

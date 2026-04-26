@@ -1,14 +1,21 @@
 import AppKit
 import SwiftUI
 
-// MARK: - Accent color
+// MARK: - Design tokens
 
-private let cortexAccent = Color(red: 0.388, green: 0.400, blue: 0.945)
+private let cortexAccent     = Color(red: 0.788, green: 0.392, blue: 0.259) // #C96442 terracotta
+private let panelBg          = Color(red: 0.078, green: 0.071, blue: 0.059).opacity(0.94) // #14120F
+private let panelFg          = Color(red: 0.949, green: 0.929, blue: 0.898) // #F2EDE3
+private let panelFgMuted     = Color(red: 0.949, green: 0.929, blue: 0.898).opacity(0.50)
+private let panelFgDim       = Color(red: 0.949, green: 0.929, blue: 0.898).opacity(0.45)
+private let panelBorder      = Color.white.opacity(0.06)
+private let panelRowHover    = Color.white.opacity(0.05)
+private let panelRowSelected = Color(red: 0.788, green: 0.392, blue: 0.259).opacity(0.12) // accent 12%
+private let panelInput       = Color.white.opacity(0.06)
+private let panelInputBorder = Color.white.opacity(0.10)
 
 // MARK: - CortexCourseTabState
 
-/// Manages the inline course-assignment UI state.
-/// Replaces the stub in CortexCourseTabState.swift (plan 02-06).
 @MainActor
 final class CortexCourseTabState: ObservableObject {
     static let shared = CortexCourseTabState()
@@ -18,65 +25,34 @@ final class CortexCourseTabState: ObservableObject {
     @Published var newCourseName = ""
     @Published var selectedCourseId: Int? = nil
 
-    /// Course ID remembered for the whole session after first pick.
     var sessionCourseId: Int?
 
     struct CourseOption: Identifiable {
         let id: Int
         let title: String
+        let concepts: Int
     }
 
     private var pendingContinuation: CheckedContinuation<Int?, Never>?
 
-    private init() {
-        // Check Accessibility permission on init — log a warning if missing.
-        // This is required for global keyboard monitors (⌘V paste).
-        // "AXTrustedCheckOptionPrompt" is the raw CF string key value.
-        let options = ["AXTrustedCheckOptionPrompt": false] as CFDictionary
-        let trusted = AXIsProcessTrustedWithOptions(options)
-        if !trusted {
-            print("[CortexCourseTabState] WARNING: Accessibility permission not granted. " +
-                  "⌘V paste monitoring may not fire. Grant in System Settings → Privacy → Accessibility.")
-        }
-    }
+    private init() {}
 
-    // MARK: - Resolution
-
-    /// Resolve a course ID for the given hint.
-    /// Returns immediately if a session course is already set.
-    /// Otherwise: pre-flight match → if confidence ≥ 0.65, silent assignment.
-    /// If no match, shows the picker (State A or B) and waits for user input.
     func resolve(hint: String) async -> Int? {
-        // 1. Use session-scoped course if already set
         if let id = sessionCourseId { return id }
 
-        // 2. Pre-flight semantic match (State C — silent assignment)
         if let match = await CortexClient.shared.matchCourse(hint: hint) {
             sessionCourseId = match
             return match
         }
 
-        // 3. Fetch available courses to determine State A vs State B
         let fetched = await CortexClient.shared.fetchCourses()
-        let lastCourseId = UserDefaults.standard.integer(forKey: "cortex.lastCourseId")
-        courses = fetched.map { CourseOption(id: $0.id, title: $0.title) }
-
-        // Pre-highlight last-selected course if it exists in the list
-        if lastCourseId > 0, courses.contains(where: { $0.id == lastCourseId }) {
-            selectedCourseId = lastCourseId
-        } else {
-            selectedCourseId = nil
-        }
-
+        let lastId  = UserDefaults.standard.integer(forKey: "cortex.lastCourseId")
+        courses = fetched.map { CourseOption(id: $0.id, title: $0.title, concepts: 0) }
+        selectedCourseId = (lastId > 0 && courses.contains { $0.id == lastId }) ? lastId : nil
         isVisible = true
 
-        // Wait for user selection (resolved via selectCourse / createCourse)
-        return await withCheckedContinuation { continuation in
-            self.pendingContinuation = continuation
-        }
+        return await withCheckedContinuation { pendingContinuation = $0 }
     }
-
-    // MARK: - User Actions
 
     func selectCourse(_ id: Int) {
         sessionCourseId = id
@@ -103,11 +79,6 @@ final class CortexCourseTabState: ObservableObject {
 
 // MARK: - CortexCourseTab View
 
-/// Inline course-assignment tab that slides into the expanded notch panel.
-/// Renders three states:
-///   State A — no courses: "Name this course" heading + text field + Confirm button
-///   State B — courses exist: "Send to…" heading + course rows + "New course…" option
-///   State C — auto-assigned (confidence ≥ 0.65): tab not shown at all
 struct CortexCourseTab: View {
     @ObservedObject var state = CortexCourseTabState.shared
 
@@ -119,151 +90,139 @@ struct CortexCourseTab: View {
         Group {
             if state.isVisible {
                 VStack(alignment: .leading, spacing: 0) {
+                    header
                     if state.courses.isEmpty {
-                        stateAView
+                        inputRow(placeholder: "e.g. CS 229", topPadding: 12)
                     } else {
-                        stateBView
+                        courseList
+                        Divider().background(panelBorder).padding(.top, 4)
+                        newCourseSection
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.07))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .frame(minHeight: 120)
+                .background(panelBg)
+                .clipShape(
+                    .rect(topLeadingRadius: 0, bottomLeadingRadius: 18,
+                          bottomTrailingRadius: 18, topTrailingRadius: 0)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .strokeBorder(panelBorder, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 12)
             }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: state.isVisible)
     }
 
-    // MARK: State A — No courses
+    // MARK: Header
 
-    private var stateAView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Name this course")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white.opacity(0.90))
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(state.courses.isEmpty ? "Name this course" : "Which course?")
+                .font(.system(size: 10.5, weight: .medium))
+                .textCase(.uppercase)
+                .tracking(0.8)
+                .foregroundStyle(panelFgDim)
 
-            TextField("e.g. CS 229: Machine Learning", text: $state.newCourseName)
-                .font(.system(size: 11))
-                .foregroundColor(.white)
-                .textFieldStyle(.plain)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.white.opacity(0.10))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .frame(height: 32)
-                .onSubmit { Task { await state.createCourse() } }
-
-            let isEmpty = state.newCourseName.trimmingCharacters(in: .whitespaces).isEmpty
-            Button("Confirm Course") {
-                Task { await state.createCourse() }
-            }
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, minHeight: 32)
-            .background(isEmpty ? cortexAccent.opacity(0.40) : cortexAccent)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .disabled(isEmpty)
+            Text(state.courses.isEmpty
+                 ? "Cortex starts with one course. Give it a name."
+                 : "Couldn\u{2019}t place this drop with confidence. Pick a course.")
+                .font(.system(size: 14, design: .serif))
+                .foregroundStyle(panelFg)
+                .lineSpacing(2)
         }
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
     }
 
-    // MARK: State B — Courses exist
+    // MARK: Course list (State B)
 
-    private var stateBView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Send to\u{2026}")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white.opacity(0.90))
-
-            // Show scroll when > 4 rows (4 rows × 40pt + 3 gaps × 8pt = 184pt max)
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 8) {
-                    ForEach(state.courses) { course in
-                        courseRow(course)
-                    }
-                    newCourseRow
-                }
+    private var courseList: some View {
+        VStack(spacing: 0) {
+            ForEach(state.courses) { course in
+                courseRow(course)
             }
-            .frame(maxHeight: CGFloat(4 * 40 + 3 * 8))
         }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 6)
     }
 
     private func courseRow(_ course: CortexCourseTabState.CourseOption) -> some View {
-        let isSelected = state.selectedCourseId == course.id
-        return Button {
-            state.selectCourse(course.id)
-        } label: {
-            HStack {
-                if isSelected {
-                    Rectangle()
-                        .fill(cortexAccent)
-                        .frame(width: 2)
-                        .frame(height: 40)
-                }
+        let selected = state.selectedCourseId == course.id
+        return Button { state.selectCourse(course.id) } label: {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(selected ? cortexAccent : panelFgMuted)
+                    .frame(width: 6, height: 6)
                 Text(course.title)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.white.opacity(0.90))
+                    .font(.system(size: 13.5, design: .serif))
+                    .fontWeight(.medium)
+                    .foregroundStyle(panelFg)
                     .lineLimit(1)
                 Spacer()
+                if course.concepts > 0 {
+                    Text("\(course.concepts)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(panelFgMuted)
+                }
             }
             .padding(.horizontal, 12)
-            .frame(height: 40)
-            .background(isSelected ? Color.white.opacity(0.12) : Color.white.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .padding(.vertical, 8)
+            .background(selected ? panelRowSelected : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
     }
 
-    private var newCourseRow: some View {
-        VStack(spacing: 6) {
-            // "New course…" tappable row
-            Button {
-                // Transition to creation mode: clear courses to show State A inline
-                // We handle this by showing a text field below the row
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.55))
-                    Text("New course\u{2026}")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.white.opacity(0.55))
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 40)
-                .background(Color.white.opacity(0.04))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            }
-            .buttonStyle(.plain)
+    // MARK: New course / input (State A bottom + State B footer)
 
-            // Inline new course text field + submit
-            HStack(spacing: 6) {
-                TextField("New course\u{2026}", text: $state.newCourseName)
-                    .font(.system(size: 11))
-                    .foregroundColor(.white)
-                    .textFieldStyle(.plain)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .frame(height: 28)
-                    .onSubmit { Task { await state.createCourse() } }
-
-                if !state.newCourseName.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Button {
-                        Task { await state.createCourse() }
-                    } label: {
-                        Text("\u{2192}")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 28, height: 28)
-                            .background(cortexAccent)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                }
+    private var newCourseSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !state.courses.isEmpty {
+                Text("New course\u{2026}")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .textCase(.uppercase)
+                    .tracking(0.8)
+                    .foregroundStyle(panelFgDim)
+                    .padding(.horizontal, 4)
             }
+            inputRow(placeholder: "course name\u{2026}", topPadding: 0)
         }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+    }
+
+    private func inputRow(placeholder: String, topPadding: CGFloat) -> some View {
+        HStack(spacing: 8) {
+            TextField(placeholder, text: $state.newCourseName)
+                .font(.system(size: 13))
+                .foregroundStyle(panelFg)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(panelInput)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(panelInputBorder, lineWidth: 1)
+                )
+                .onSubmit { Task { await state.createCourse() } }
+
+            let empty = state.newCourseName.trimmingCharacters(in: .whitespaces).isEmpty
+            Button("Confirm") { Task { await state.createCourse() } }
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(empty ? cortexAccent.opacity(0.4) : cortexAccent)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .buttonStyle(.plain)
+                .disabled(empty)
+        }
+        .padding(.top, topPadding)
+        .padding(.horizontal, state.courses.isEmpty ? 14 : 0)
+        .padding(.bottom, state.courses.isEmpty ? 12 : 0)
     }
 }
