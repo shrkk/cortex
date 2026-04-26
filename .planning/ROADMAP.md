@@ -143,13 +143,27 @@ Cross-cutting constraints:
   3. A concept node that has ≥ 3 similar student questions (from a chat_log source) has `struggle_signals` containing `repeated_confusion`
   4. `GET /quiz/{id}/results` returns a score breakdown and a list of concept titles to review
   5. Flipping a flashcard (front → back) requires no grading action — it is purely a display toggle with no DB write
-**Plans**: TBD
+**Plans**: 4 plans
+
+**Wave 0** *(TDD RED — test scaffolding + module skeletons)*
+- [ ] 04-01-PLAN.md — Test stubs (RED state) + flashcards.py/signals.py/quiz.py/schemas/quiz.py skeletons
+
+**Wave 1** *(parallel — depends on Wave 0)*
+- [ ] 04-02-PLAN.md — Flashcard generation stage: flashcards.py + pipeline.py stage 7 wiring (FLASH-01..06)
+- [ ] 04-03-PLAN.md — Struggle signal detection stage: signals.py + pipeline.py stage 8 wiring (STRUGGLE-01..06)
+
+**Wave 2** *(depends on Wave 1)*
+- [ ] 04-04-PLAN.md — Quiz API: quiz.py full implementation + router.py registration (QUIZ-01..06)
+
 **Stack notes**:
   - No SRS: flashcard nodes have no `due_at`, `ease_factor`, or `repetitions` columns — this is v2 scope
   - No mastery scoring: `struggle_signals` feed quiz generation only, not a 0–1 score
   - Quiz node is attached to course root (QUIZ-01), not to individual concept nodes
-  - Flashcard generation: max 3 parallel LLM calls; `asyncio.sleep(0.2)` between batches if rate-limited
-  - `POST /quiz/{id}/answer` grades free-response via Claude; returns next question or final results
+  - Flashcard generation: max 3 parallel LLM calls via asyncio.Semaphore(3)
+  - `flag_modified(obj, "field")` required for ANY in-place mutation of `quizzes.questions` or `concepts.struggle_signals`
+  - `result.scalars().unique().all()` required when joining Concept via ConceptSource to prevent duplicates
+  - D-11: signals dict only includes evaluated keys — never set unevaluated keys to False
+  - `POST /quiz/{id}/answer` grades free-response via Claude tool_use; returns next question or final results inline
 
 ### Phase 5: Graph API
 **Goal**: All backend API contracts are stable and return correctly shaped graph payloads — course nodes, concept nodes, flashcard nodes, quiz nodes, all edges, and course-matching — so the frontend can be built against them without rework.
@@ -224,7 +238,7 @@ Cross-cutting constraints:
 | 1. Infrastructure | 5/5 | Complete | 2026-04-25 |
 | 2. Ingest + Parsing + Notch | 0/8 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/4 | Planned | - |
-| 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
+| 4. Flashcards, Struggle & Quiz | 0/4 | Planned | - |
 | 5. Graph API | 0/4 | Planned | - |
 | 6. Frontend | 0/0 | Not started | - |
 | 7. Demo Readiness | 0/0 | Not started | - |
@@ -256,4 +270,4 @@ Cross-cutting constraints:
 ---
 
 *Roadmap created: 2026-04-25*
-*Last updated: 2026-04-25 — Phase 5 planning complete (4 plans across 3 waves; all GRAPH requirements mapped)*
+*Last updated: 2026-04-25 — Phase 4 planning complete (4 plans across 3 waves; all FLASH/STRUGGLE/QUIZ requirements mapped)*
