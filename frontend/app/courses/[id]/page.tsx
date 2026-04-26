@@ -117,12 +117,28 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         )}
       </div>
 
-      {/* Reading drawer */}
-      <ReadingDrawer
-        concept={concept ?? null}
-        flashcards={flashcards ?? []}
-        onClose={() => setSelectedConceptId(null)}
-      />
+      {/* Reading drawer — opens when a concept node is clicked */}
+      {selectedConceptId && (
+        <ReadingDrawer
+          concept={concept ?? null}
+          flashcards={flashcards ?? []}
+          onClose={() => setSelectedConceptId(null)}
+          onGenerateQuiz={async () => {
+            try {
+              const quiz = await apiFetch<{ id: number; course_id: number; questions: unknown[] }>(
+                "/quiz",
+                {
+                  method: "POST",
+                  body: JSON.stringify({ course_id: parseInt(id, 10), num_questions: 7 }),
+                }
+              );
+              router.push(`/quiz/${quiz.id}`);
+            } catch (e) {
+              console.error("Quiz generation failed", e);
+            }
+          }}
+        />
+      )}
     </AppShell>
   );
 }
