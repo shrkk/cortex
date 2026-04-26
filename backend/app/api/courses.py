@@ -36,7 +36,7 @@ async def create_course(
     body: CourseCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    course = Course(title=body.title, user_id=body.user_id)
+    course = Course(title=body.title, user_id=1)  # single-user design: always pin to user 1
     session.add(course)
     await session.commit()
     await session.refresh(course)
