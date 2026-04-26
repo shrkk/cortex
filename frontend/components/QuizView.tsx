@@ -1,296 +1,266 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Button, Eyebrow, Icon } from "./ui/primitives";
-import type { QuizQuestion } from "@/lib/api";
+import React, { useState } from "react";
+import type { QuizQuestion, AnswerResponse } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 interface QuizViewProps {
+  quizId: number;
   questions: QuizQuestion[];
-  onComplete?: (score: number, total: number, weakConcepts: string[]) => void;
 }
 
-export function QuizView({ questions, onComplete }: QuizViewProps) {
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
+export function QuizView({ quizId, questions }: QuizViewProps) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);   // MCQ option index
   const [freeText, setFreeText] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [results, setResults] = useState<boolean[]>([]);
-  const [done, setDone] = useState(false);
+  const [grading, setGrading] = useState<AnswerResponse["grading"] | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+  const [finalResult, setFinalResult] = useState<AnswerResponse | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const q = questions[idx];
+  if (!questions.length) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "var(--ink-muted)" }}>
+        No questions available.
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    setSelected(null);
-    setFreeText("");
-    setSubmitted(false);
-  }, [idx]);
+  const q = questions[currentIdx];
+  const isMcq = q.type === "mcq";
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    if (q.type === "mcq") {
-      setResults((r) => [...r, selected === q.correct_index]);
-    } else {
-      setResults((r) => [...r, true]); // free text — marked as attempted
+  const canSubmit = !submitted && !loading &&
+    (isMcq ? selected !== null : freeText.trim().length > 0);
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setLoading(true);
+    try {
+      const answer = isMcq
+        ? (q.options?.[selected!] ?? String(selected))
+        : freeText;
+      const result = await apiFetch<AnswerResponse>(`/quiz/${quizId}/answer`, {
+        method: "POST",
+        body: JSON.stringify({ question_id: q.question_id, answer }),
+      });
+      setGrading(result.grading);
+      setSubmitted(true);
+      if (result.is_complete) {
+        setIsComplete(true);
+        setFinalResult(result);
+      }
+    } catch (e) {
+      console.error("Answer submission failed", e);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleNext = () => {
-    if (idx < questions.length - 1) {
-      setIdx((i) => i + 1);
-    } else {
-      setDone(true);
-      const score = results.filter(Boolean).length + (q.type === "mcq" && selected === q.correct_index ? 1 : 0);
-      onComplete?.(score, questions.length, []);
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx(i => i + 1);
+      setSelected(null);
+      setFreeText("");
+      setSubmitted(false);
+      setGrading(null);
     }
   };
 
-  if (done || !q) {
-    const score = results.filter(Boolean).length;
-    return <QuizResults score={score} total={questions.length} />;
-  }
-
-  const progress = (idx / questions.length) * 100;
-  const canSubmit =
-    q.type === "mcq" ? selected !== null : freeText.trim().length > 0;
-
-  return (
-    <div
-      style={{
-        flex: 1,
+  // Final screen
+  if (isComplete && finalResult) {
+    const correct = finalResult.correct_count ?? 0;
+    const total = finalResult.total ?? questions.length;
+    return (
+      <div style={{
+        maxWidth: 640,
+        margin: "0 auto",
+        padding: "40px 16px",
         display: "flex",
         flexDirection: "column",
+        gap: 24,
         alignItems: "center",
-        padding: "40px 24px",
-        background: "var(--paper)",
-        overflowY: "auto",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", gap: 28 }}>
-        {/* Progress bar */}
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
-              color: "var(--ink-muted)",
-              fontSize: 12.5,
-            }}
-          >
-            <span>Question {idx + 1} of {questions.length}</span>
-          </div>
-          <div
-            style={{
-              height: 3,
-              background: "var(--surface-sunken)",
-              borderRadius: 999,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${progress}%`,
-                height: "100%",
-                background: "var(--accent)",
-                transition: "width 300ms var(--ease)",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Question */}
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 24,
-              lineHeight: 1.35,
-              color: "var(--ink-soft)",
-              letterSpacing: "-0.01em",
-              fontWeight: 500,
-            }}
-          >
-            {q.question}
-          </div>
-        </div>
-
-        {/* MCQ options */}
-        {q.type === "mcq" && q.options && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {q.options.map((opt, i) => {
-              const isSel = selected === i;
-              const isCorrect = submitted && i === q.correct_index;
-              const isWrong = submitted && isSel && i !== q.correct_index;
-              return (
-                <button
-                  key={i}
-                  onClick={() => !submitted && setSelected(i)}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 14,
-                    background: isCorrect
-                      ? "var(--mastery-high-soft)"
-                      : isWrong
-                      ? "var(--mastery-low-soft)"
-                      : isSel
-                      ? "var(--surface-hover)"
-                      : "var(--surface)",
-                    border: `1px solid ${
-                      isCorrect
-                        ? "var(--mastery-high)"
-                        : isWrong
-                        ? "var(--mastery-low)"
-                        : isSel
-                        ? "var(--border-strong)"
-                        : "var(--border)"
-                    }`,
-                    borderRadius: 8,
-                    padding: "14px 18px",
-                    textAlign: "left",
-                    cursor: submitted ? "default" : "pointer",
-                    fontFamily: "var(--font-sans)",
-                    color: "var(--ink)",
-                    transition: "background 200ms var(--ease), border-color 200ms var(--ease)",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 999,
-                      flexShrink: 0,
-                      border: `1px solid ${isSel ? "var(--accent)" : "var(--border-strong)"}`,
-                      background:
-                        isSel && !submitted ? "var(--accent)" : "transparent",
-                      color: "var(--accent-ink)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      fontWeight: 500,
-                      marginTop: 1,
-                    }}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  <span style={{ fontSize: 15, lineHeight: 1.5, flex: 1 }}>{opt}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Free response */}
-        {(q.type === "short_answer" || q.type === "application") && (
-          <textarea
-            value={freeText}
-            onChange={(e) => setFreeText(e.target.value)}
-            disabled={submitted}
-            placeholder="Type your answer."
-            style={{
-              minHeight: 140,
-              width: "100%",
-              boxSizing: "border-box",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "14px 16px",
-              fontFamily: "var(--font-serif)",
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: "var(--ink)",
-              resize: "vertical",
-              outline: "none",
-            }}
-          />
-        )}
-
-        {/* Explanation — shown after submit if grading feedback available */}
-        {submitted && q.grading?.feedback && (
-          <div
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: "16px 20px",
-            }}
-          >
-            <Eyebrow style={{ marginBottom: 6 }}>Feedback</Eyebrow>
-            <div
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 14.5,
-                lineHeight: 1.6,
-                color: "var(--ink)",
-              }}
-            >
-              {q.grading.feedback}
+      }}>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: "var(--ink)", textAlign: "center" }}>
+          {correct} / {total} correct
+        </h2>
+        {finalResult.concepts_to_review && finalResult.concepts_to_review.length > 0 ? (
+          <div style={{ width: "100%", textAlign: "left" }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-muted)", marginBottom: 8 }}>
+              Concepts to review:
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {finalResult.concepts_to_review.map(cid => (
+                <span key={cid} style={{
+                  fontSize: 12, fontWeight: 600,
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-pill)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--ink-soft)",
+                }}>
+                  Concept #{cid}
+                </span>
+              ))}
             </div>
           </div>
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "var(--mastery-high)", marginBottom: 4 }}>
+              Great work
+            </p>
+            <p style={{ fontSize: 14, color: "var(--ink-muted)" }}>
+              No weak spots identified from this quiz.
+            </p>
+          </div>
         )}
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
-          <Button variant="ghost" icon="arrowLeft">
-            Skip
-          </Button>
-          {submitted ? (
-            <Button onClick={handleNext}>
-              Next question <Icon name="arrowRight" size={15} />
-            </Button>
-          ) : (
-            <Button disabled={!canSubmit} onClick={handleSubmit}>
-              Submit answer
-            </Button>
-          )}
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function QuizResults({
-  score,
-  total,
-}: {
-  score: number;
-  total: number;
-}) {
-  const missed = total - score;
   return (
-    <div
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "64px 24px",
-        background: "var(--paper)",
-      }}
-    >
-      <div style={{ maxWidth: 480, width: "100%", textAlign: "center", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div
+    <div style={{ maxWidth: 640, margin: "0 auto", padding: "40px 16px" }}>
+      {/* Progress */}
+      <div style={{
+        height: 4,
+        background: "var(--surface)",
+        borderRadius: 2,
+        marginBottom: 32,
+        overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%",
+          width: `${((currentIdx + 1) / questions.length) * 100}%`,
+          background: "var(--accent)",
+          transition: "width 0.3s var(--ease)",
+        }} />
+      </div>
+
+      {/* Question number */}
+      <p style={{ fontSize: 12, color: "var(--ink-muted)", marginBottom: 8, fontWeight: 600 }}>
+        Question {currentIdx + 1} of {questions.length}
+      </p>
+
+      {/* Question text */}
+      <p style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)", marginBottom: 24, lineHeight: 1.4 }}>
+        {q.question}
+      </p>
+
+      {/* MCQ options */}
+      {isMcq && q.options && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {q.options.map((opt, i) => (
+            <label
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 14px",
+                background: selected === i ? "var(--accent-soft)" : "var(--surface)",
+                border: `1px solid ${selected === i ? "var(--accent)" : "var(--border)"}`,
+                borderRadius: "var(--radius-sm)",
+                cursor: submitted ? "default" : "pointer",
+                fontSize: 14,
+                color: "var(--ink)",
+                transition: "all var(--dur-fast) var(--ease)",
+              }}
+            >
+              <input
+                type="radio"
+                name="mcq"
+                value={i}
+                checked={selected === i}
+                onChange={() => !submitted && setSelected(i)}
+                disabled={submitted}
+                style={{ accentColor: "var(--accent)" }}
+              />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+
+      {/* Free-response textarea */}
+      {!isMcq && (
+        <textarea
+          value={freeText}
+          onChange={e => setFreeText(e.target.value)}
+          disabled={submitted}
+          placeholder="Type your answer..."
+          rows={3}
           style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 56,
-            fontWeight: 400,
-            color: "var(--ink-soft)",
-            letterSpacing: "-0.02em",
-            lineHeight: 1,
+            width: "100%",
+            padding: "10px 14px",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
+            fontSize: 14,
+            color: "var(--ink)",
+            resize: "vertical",
+            marginBottom: 16,
+            boxSizing: "border-box",
+          }}
+        />
+      )}
+
+      {/* Submit button */}
+      {!submitted && (
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          style={{
+            padding: "10px 24px",
+            background: canSubmit ? "var(--accent)" : "var(--surface)",
+            color: canSubmit ? "var(--accent-ink)" : "var(--ink-faint)",
+            border: `1px solid ${canSubmit ? "var(--accent)" : "var(--border)"}`,
+            borderRadius: "var(--radius-sm)",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: canSubmit ? "pointer" : "not-allowed",
           }}
         >
-          {score} of {total}
+          {loading ? "Grading…" : "Submit Answer"}
+        </button>
+      )}
+
+      {/* Feedback after submit */}
+      {submitted && grading && (
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{
+            padding: "12px 16px",
+            borderRadius: "var(--radius-sm)",
+            background: grading.correct ? "var(--success-soft)" : "var(--danger-soft)",
+            border: `1px solid ${grading.correct ? "var(--mastery-high)" : "var(--mastery-low)"}`,
+            fontSize: 14,
+            color: grading.correct ? "var(--mastery-high)" : "var(--mastery-low)",
+            fontWeight: 600,
+          }}>
+            {grading.correct ? "✓ Correct" : "✗ Incorrect"}
+          </div>
+          <p style={{ fontSize: 14, color: "var(--ink-muted)", lineHeight: 1.6 }}>
+            {grading.feedback}
+          </p>
+          {!isComplete && currentIdx < questions.length - 1 && (
+            <button
+              onClick={handleNext}
+              style={{
+                alignSelf: "flex-start",
+                padding: "8px 20px",
+                background: "var(--surface)",
+                color: "var(--ink)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Next Question →
+            </button>
+          )}
         </div>
-        <div style={{ color: "var(--ink-muted)", fontSize: 15 }}>
-          {missed === 0
-            ? "All concepts answered correctly."
-            : `${missed} concept${missed > 1 ? "s" : ""} to revisit.`}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
