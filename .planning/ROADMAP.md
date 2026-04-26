@@ -122,7 +122,7 @@ Cross-cutting constraints:
 - [x] 03-03-PLAN.md — Concept Resolution stage (resolver.py, RESOLVE-01..05)
 
 **Wave 2** *(depends on Wave 1)*
-- [ ] 03-04-PLAN.md — Edge Inference + BFS depth + pipeline.py wiring (edges.py, EDGE-01..04)
+- [x] 03-04-PLAN.md — Edge Inference + BFS depth + pipeline.py wiring (edges.py, EDGE-01..04)
 
 **Stack notes**:
   - Use Claude `tool_use` with strict JSON Schema (`additionalProperties: false`) — never parse free-text JSON
