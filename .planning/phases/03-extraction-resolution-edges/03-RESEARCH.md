@@ -818,22 +818,22 @@ async def _resolve_concept(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Co-occurrence unique constraint**
    - What we know: No unique index on `(from_id, to_id, edge_type)` in 0001_initial.py.
    - What's unclear: Should Phase 3 add a migration `0003_edge_unique.py` to enable ON CONFLICT DO UPDATE? Or is SELECT-then-UPDATE sufficient?
-   - Recommendation: Use SELECT-then-UPDATE in Phase 3 (no migration). If Phase 3 testing reveals performance issues, add migration in Phase 5 when graph queries are built.
+   - RESOLVED: Use SELECT-then-UPDATE in Phase 3 (no migration). If Phase 3 testing reveals performance issues, add migration in Phase 5 when graph queries are built.
 
 2. **Concept embedding strategy during extraction vs resolution**
    - What we know: During extraction, a concept dict is returned by LLM. During resolution, we need to embed the concept.
    - What's unclear: Should the concept be embedded immediately during `_stage_extract` and the vector stored in a temp dict, or should embedding happen in `_stage_resolve` for each candidate?
-   - Recommendation: Embed in `_stage_resolve` just-in-time. This keeps extraction pure (LLM only) and avoids embedding concepts that will be merged away.
+   - RESOLVED: Embed in `_stage_resolve` just-in-time. This keeps extraction pure (LLM only) and avoids embedding concepts that will be merged away.
 
 3. **EXTRACT-03: How to extract student questions from chat_log chunks**
    - What we know: EXTRACT-03 says "extracted verbatim ONLY for chat_log source types."
    - What's unclear: Should questions be extracted by regex (find lines ending in `?`) or by a separate LLM tool call?
-   - Recommendation: Regex approach first (`re.findall(r'[^.!?]*\?', chunk.text)`) — low complexity, sufficient for demo. Add to `ConceptSource.student_questions` JSON array.
+   - RESOLVED: Regex approach first (`re.findall(r'[^.!?]*\?', chunk.text)`) — low complexity, sufficient for demo. Add to `ConceptSource.student_questions` JSON array.
 
 ---
 

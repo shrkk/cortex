@@ -110,9 +110,20 @@ Cross-cutting constraints:
   1. Processing a CS229 PDF produces 10–40 concept nodes with populated `title`, `definition`, `key_points`, `gotchas`, `examples`; no concept has a generic title like "Problem Solving" or an abbreviation-only title like "NN"
   2. Dropping the same PDF twice into the same course produces the same concept nodes, not duplicates (content_hash dedup + resolution working together)
   3. Two different PDFs covering "Gradient Descent" in the same CS229 course produce exactly ONE concept node (RESOLVE-05 verified in psql)
-  4. After edge inference, `concepts.depth` is a non-null integer for every concept in the course; the course root node is depth 0
+  4. After edge inference, `concepts.depth` is a non-null integer for every concept in the course; root concept nodes (no incoming prerequisite edges) get `depth=1`; the course node itself is virtual depth=0 synthesized by the Phase 5 graph API from the `courses` table, not stored in `concepts.depth`
   5. The `extraction_cache` table has rows after processing; rerunning the pipeline on the same source skips LLM calls (cache hits logged)
-**Plans**: TBD
+**Plans**: 4 plans
+
+**Wave 0** *(TDD RED — test scaffolding + module skeletons)*
+- [ ] 03-01-PLAN.md — Test stubs (RED state) + extractor/resolver/edges module skeletons
+
+**Wave 1** *(parallel — depends on Wave 0)*
+- [ ] 03-02-PLAN.md — LLM Extraction stage (extractor.py, EXTRACT-01..05)
+- [ ] 03-03-PLAN.md — Concept Resolution stage (resolver.py, RESOLVE-01..05)
+
+**Wave 2** *(depends on Wave 1)*
+- [ ] 03-04-PLAN.md — Edge Inference + BFS depth + pipeline.py wiring (edges.py, EDGE-01..04)
+
 **Stack notes**:
   - Use Claude `tool_use` with strict JSON Schema (`additionalProperties: false`) — never parse free-text JSON
   - Retry once on parse failure; log malformed responses
@@ -194,7 +205,7 @@ Cross-cutting constraints:
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 5/5 | Complete | 2026-04-25 |
 | 2. Ingest + Parsing + Notch | 0/8 | Not started | - |
-| 3. Extraction, Resolution & Edges | 0/0 | Not started | - |
+| 3. Extraction, Resolution & Edges | 0/4 | Planned | - |
 | 4. Flashcards, Struggle & Quiz | 0/0 | Not started | - |
 | 5. Graph API | 0/0 | Not started | - |
 | 6. Frontend | 0/0 | Not started | - |
@@ -227,4 +238,4 @@ Cross-cutting constraints:
 ---
 
 *Roadmap created: 2026-04-25*
-*Last updated: 2026-04-25 — Phase 2 planning complete (8 plans, all ING/PARSE/PIPE requirements mapped)*
+*Last updated: 2026-04-25 — Phase 3 planning complete (4 plans across 3 waves; all EXTRACT/RESOLVE/EDGE requirements mapped)*
