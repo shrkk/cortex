@@ -5,13 +5,13 @@ milestone_name: milestone
 current_phase: Phase 2 — Ingest + Parsing + Notch
 current_plan: Plan 0 of 8 (not started)
 status: executing
-last_updated: "2026-04-26T00:14:33.713Z"
+last_updated: "2026-04-26T00:31:49.378Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 14
+  total_plans: 21
   completed_plans: 12
-  percent: 86
+  percent: 57
 ---
 
 # Project State: Cortex
@@ -41,7 +41,7 @@ Progress: [████████████████████] 100% (P
 
 Phase 1: Infrastructure          [x] COMPLETE — 5/5 plans complete
 Phase 2: Ingest + Parsing + Notch [~] PLANNED — 8/8 plans ready
-Phase 3: Extraction, Resolution & Edges [ ] Not started
+Phase 3: Extraction, Resolution & Edges [~] PLANNED — 4/4 plans ready
 Phase 4: Flashcards, Struggle & Quiz [ ] Not started
 Phase 5: Graph API               [ ] Not started
 Phase 6: Frontend                [ ] Not started
