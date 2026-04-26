@@ -88,7 +88,7 @@ Cross-cutting constraints:
 - [x] 02-06-PLAN.md — Swift Cortex module: CortexClient, CortexIngest, CortexSettings, CortexStatusView [notch-specialist]
 
 **Wave 5** *(depends on 02-06)*
-- [ ] 02-07-PLAN.md — CortexCourseTab + surgical edit + ⌘V handler [notch-specialist]
+- [x] 02-07-PLAN.md — CortexCourseTab + surgical edit + ⌘V handler [notch-specialist]
 
 **Wave 6** *(depends on 02-05, 02-07)*
 - [ ] 02-08-PLAN.md — Integration tests + phase gate verification
