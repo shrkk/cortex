@@ -1,193 +1,168 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Button, Eyebrow, Kbd, Pill } from "./ui/primitives";
+import React, { useState, useEffect } from "react";
 import type { Flashcard } from "@/lib/api";
 
 interface FlashcardViewProps {
   flashcards: Flashcard[];
   conceptTitle?: string;
-  embedded?: boolean; // true when inside ReadingDrawer
+  embedded?: boolean;
+  onBack?: () => void;
 }
 
-export function FlashcardView({
-  flashcards,
-  conceptTitle,
-  embedded = false,
-}: FlashcardViewProps) {
+export function FlashcardView({ flashcards, conceptTitle, embedded, onBack }: FlashcardViewProps) {
   const [idx, setIdx] = useState(0);
-  const [revealed, setRevealed] = useState(false);
+  const [flipped, setFlipped] = useState(false);
 
-  const card = flashcards[idx];
+  // Reset flip state when card changes
+  useEffect(() => { setFlipped(false); }, [idx]);
 
-  useEffect(() => {
-    setRevealed(false);
-  }, [idx]);
-
+  // Keyboard navigation
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === " ") { e.preventDefault(); setRevealed((r) => !r); }
-      if (e.key === "ArrowRight") setIdx((i) => (i + 1) % flashcards.length);
-      if (e.key === "ArrowLeft")  setIdx((i) => (i - 1 + flashcards.length) % flashcards.length);
+      if (e.key === " ") { e.preventDefault(); setFlipped(f => !f); }
+      if (e.key === "ArrowRight") {
+        setIdx(i => (i + 1) % Math.max(flashcards.length, 1));
+      }
+      if (e.key === "ArrowLeft") {
+        setIdx(i => (i - 1 + Math.max(flashcards.length, 1)) % Math.max(flashcards.length, 1));
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [flashcards.length]);
 
-  if (!card) {
+  if (!flashcards.length) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 48, color: "var(--ink-muted)", fontFamily: "var(--font-serif)", fontSize: 16 }}>
-        No flashcards yet.
+      <div style={{ padding: 24, color: "var(--ink-muted)", textAlign: "center" }}>
+        <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>No flashcards yet</p>
+        <p style={{ fontSize: 14 }}>Flashcards are generated automatically when concept extraction completes.</p>
       </div>
     );
   }
 
-  const TYPE_LABEL: Record<string, string> = {
-    definition: "Definition",
-    application: "Application",
-    gotcha: "Gotcha",
-    compare: "Compare",
-  };
-
-  const inner = (
-    <div style={{ width: "100%", maxWidth: 580, display: "flex", flexDirection: "column", gap: 28 }}>
-      {/* Progress */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "var(--ink-muted)", fontSize: 12.5 }}>
-        <span style={{ fontFamily: "var(--font-mono)" }}>
-          {idx + 1} / {flashcards.length}
-        </span>
-        <span>
-          {conceptTitle ?? "Flashcards"} · flashcards
-        </span>
-      </div>
-
-      {/* Card face */}
-      <div style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "44px 40px",
-        minHeight: embedded ? 240 : 320,
-        display: "flex",
-        flexDirection: "column",
-        gap: 18,
-        boxShadow: "var(--shadow-sm)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Pill tone={card.card_type === "gotcha" ? "mid" : "neutral"}>
-            {TYPE_LABEL[card.card_type] ?? "Card"}
-          </Pill>
-          <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>front</span>
-        </div>
-
-        <div style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: embedded ? 20 : 26,
-          lineHeight: 1.35,
-          color: "var(--ink-soft)",
-          letterSpacing: "-0.01em",
-          fontWeight: 500,
-        }}>
-          {card.front}
-        </div>
-
-        {revealed && (
-          <>
-            <div style={{ height: 1, background: "var(--border-soft)", margin: "8px 0" }} />
-            <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>back</span>
-            {card.card_type === "gotcha" ? (
-              <div style={{
-                background: "var(--highlight-bg)",
-                borderLeft: "3px solid var(--highlight-bar)",
-                borderRadius: 6,
-                padding: "14px 18px",
-                fontFamily: "var(--font-serif)",
-                fontSize: 16,
-                lineHeight: 1.6,
-                color: "var(--ink)",
-              }}>
-                {card.back}
-              </div>
-            ) : (
-              <div style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 17,
-                lineHeight: 1.6,
-                color: "var(--ink)",
-              }}>
-                {card.back}
-              </div>
-            )}
-          </>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <button
-            onClick={() => setRevealed((r) => !r)}
-            style={{
-              background: "transparent",
-              border: "1px solid var(--border)",
-              color: "var(--ink-muted)",
-              padding: "9px 16px",
-              borderRadius: 6,
-              fontFamily: "var(--font-sans)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            {revealed ? "Flip back" : "Show back"} <Kbd>space</Kbd>
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation — flip only, no grading (FLASH-06) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Button
-          variant="ghost"
-          icon="arrowLeft"
-          onClick={() => setIdx((i) => (i - 1 + flashcards.length) % flashcards.length)}
-        >
-          Previous
-        </Button>
-        <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
-          <Kbd>space</Kbd> flip · <Kbd>←</Kbd>/<Kbd>→</Kbd> navigate
-        </span>
-        <Button
-          variant="secondary"
-          onClick={() => setIdx((i) => (i + 1) % flashcards.length)}
-        >
-          Next card
-        </Button>
-      </div>
-    </div>
-  );
-
-  if (embedded) {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 24px", gap: 0 }}>
-        {inner}
-      </div>
-    );
-  }
+  const card = flashcards[idx];
+  const total = flashcards.length;
 
   return (
     <div style={{
-      flex: 1,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
-      padding: "48px 24px",
-      background: "var(--paper)",
-      minHeight: 0,
+      gap: 16,
+      padding: embedded ? "0" : "32px 16px",
+      width: "100%",
     }}>
-      {inner}
+      {/* Back button when embedded in panel */}
+      {embedded && onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            alignSelf: "flex-start",
+            background: "none",
+            border: "none",
+            color: "var(--ink-muted)",
+            fontSize: 13,
+            cursor: "pointer",
+            padding: "4px 0",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          ← Back
+          {conceptTitle && <span style={{ color: "var(--ink-faint)" }}>to {conceptTitle}</span>}
+        </button>
+      )}
+
+      {/* Progress */}
+      <div style={{ fontSize: 12, color: "var(--ink-muted)" }}>
+        {idx + 1} / {total}
+      </div>
+
+      {/* Card with 3D flip */}
+      {/* The card wrapper is 480x280 with perspective from .flashcard-container */}
+      <div
+        className="flashcard-container"
+        style={{
+          width: Math.min(480, embedded ? 320 : 480),
+          height: embedded ? 200 : 280,
+        }}
+      >
+        <div className={`flashcard-inner${flipped ? " flipped" : ""}`}
+          style={{ width: "100%", height: "100%" }}
+        >
+          {/* Front face */}
+          <div
+            className="flashcard-front"
+            style={{ background: "var(--surface)", cursor: "pointer" }}
+            onClick={() => setFlipped(true)}
+          >
+            <span style={{ fontSize: embedded ? 18 : 24, fontWeight: 600, textAlign: "center", color: "var(--ink)", lineHeight: 1.3 }}>
+              {card.front}
+            </span>
+          </div>
+          {/* Back face */}
+          <div
+            className="flashcard-back"
+            style={{ background: "var(--surface)" }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 400, textAlign: "center", color: "var(--ink-soft)", lineHeight: 1.6 }}>
+              {card.back}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {!flipped ? (
+          <button
+            onClick={() => setFlipped(true)}
+            style={{
+              padding: "8px 20px",
+              background: "var(--accent)",
+              color: "var(--accent-ink)",
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Show Answer
+          </button>
+        ) : (
+          <button
+            onClick={() => setIdx(i => (i + 1) % total)}
+            style={{
+              padding: "8px 20px",
+              background: "var(--surface-hover)",
+              color: "var(--ink)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-sm)",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Next →
+          </button>
+        )}
+      </div>
+
+      {/* Card type badge */}
+      {card.card_type && (
+        <span style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: "var(--ink-faint)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+        }}>
+          {card.card_type}
+        </span>
+      )}
     </div>
   );
 }
