@@ -13,7 +13,7 @@
 - [ ] **Phase 2: Ingest + Parsing + Notch** — Files dropped into notch arrive at backend as parsed chunks with embeddings
 - [x] **Phase 3: Extraction, Resolution & Edges** — Concepts extracted, deduplicated per course, edges inferred, depth computed
 - [x] **Phase 4: Flashcards, Struggle & Quiz** — Flashcard nodes generated, struggle signals detected, quiz endpoint live
-- [ ] **Phase 5: Graph API** — All API contracts stable and returning correct graph payloads
+- [x] **Phase 5: Graph API** — All API contracts stable and returning correct graph payloads
 - [ ] **Phase 6: Frontend** — Graph, flashcard, quiz, library, and dashboard views functional
 - [ ] **Phase 7: Demo Readiness** — Seed data loaded with variance, README complete, all acceptance tests pass
 
@@ -239,7 +239,7 @@ Cross-cutting constraints:
 | 2. Ingest + Parsing + Notch | 0/8 | Not started | - |
 | 3. Extraction, Resolution & Edges | 0/4 | Planned | - |
 | 4. Flashcards, Struggle & Quiz | 0/4 | Planned | - |
-| 5. Graph API | 0/4 | Planned | - |
+| 5. Graph API | 4/4 | Complete | 2026-04-26 |
 | 6. Frontend | 0/0 | Not started | - |
 | 7. Demo Readiness | 0/0 | Not started | - |
 
