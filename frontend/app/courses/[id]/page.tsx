@@ -89,7 +89,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           {graph ? (
             <GraphCanvas graphData={graph} onNodeClick={handleNodeClick} />
           ) : (
-            <GraphEmpty />
+            <GraphEmpty isProcessing={hasPending} />
           )}
         </ReactFlowProvider>
 
@@ -143,15 +143,21 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   );
 }
 
-function GraphEmpty() {
+function GraphEmpty({ isProcessing }: { isProcessing?: boolean }) {
+  // Empty state copy — exact match to UI-SPEC §Empty States: Graph
+  const heading = isProcessing ? "Building your graph…" : "Nothing here yet";
+  const body = isProcessing
+    ? "Cortex is extracting concepts from your sources. Check back in a moment."
+    : "Drop a PDF, URL, or image into the notch to start building this course.";
+
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--paper)" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink-soft)", marginBottom: 12 }}>
-          Nothing in your graph yet.
+      <div style={{ textAlign: "center", maxWidth: "40ch" }}>
+        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
+          {heading}
         </div>
-        <div style={{ color: "var(--ink-muted)", fontSize: 15 }}>
-          Drop something into the notch to start building this course.
+        <div style={{ color: "var(--ink-muted)", fontSize: 15, lineHeight: 1.5 }}>
+          {body}
         </div>
       </div>
     </div>
