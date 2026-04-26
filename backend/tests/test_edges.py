@@ -185,11 +185,11 @@ async def test_compute_depths_assigns_non_null_to_all():
     with patch("app.pipeline.edges.AsyncSessionLocal", return_value=session):
         await _compute_depths(course_id=1)
 
-    # Must have committed AND issued update statements equal to concept count (3)
+    # Must have committed AND issued update statements
     assert session.commit.await_count >= 1
     # RED state: stub returns immediately; Wave 2 must call session.execute for updates
-    # Total execute calls: 1 (load concepts) + 1 (load edges) + N updates >= 5
-    assert session.execute.await_count >= 5  # FAILS in RED state (stub makes 0 calls)
+    # Total execute calls: 1 (load concepts) + 1 (load edges) + 1 (bulk CASE-WHEN update) = 3
+    assert session.execute.await_count >= 3  # FAILS in RED state (stub makes 0 calls)
 
 
 def test_edges_module_uses_collections_deque_for_bfs():
