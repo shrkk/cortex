@@ -27,24 +27,20 @@ async def get_concept_detail(
     Security: validates concept belongs to a course owned by user_id=1 before
     returning data (prevents concept ID enumeration across users).
     """
-    # 1. Load concept row
+    # 1. Load concept row + ownership check in a single query (WR-01).
+    # Joining Course here eliminates a second round-trip and prevents timing
+    # side-channel: attacker cannot distinguish "concept exists but not mine"
+    # from "concept does not exist" because both return the same 404.
     result = await session.execute(
-        sa.select(Concept).where(Concept.id == concept_id)
+        sa.select(Concept)
+        .join(Course, Concept.course_id == Course.id)
+        .where(Concept.id == concept_id, Course.user_id == 1)
     )
     concept = result.scalar_one_or_none()
     if concept is None:
         raise HTTPException(status_code=404, detail="Concept not found")
 
-    # 2. Ownership check: concept must belong to a course owned by user_id=1
-    ownership = await session.execute(
-        sa.select(Course.id)
-        .join(Concept, Concept.course_id == Course.id)
-        .where(Concept.id == concept_id, Course.user_id == 1)
-    )
-    if ownership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=404, detail="Concept not found")
-
-    # 3. Load concept_sources joined with sources (single query — no N+1)
+    # 2. Load concept_sources joined with sources (single query — no N+1)
     cs_result = await session.execute(
         sa.select(ConceptSource, Source)
         .join(Source, ConceptSource.source_id == Source.id)
@@ -66,7 +62,7 @@ async def get_concept_detail(
             )
         )
 
-    # 4. Flashcard count — scalar aggregate (not a list load)
+    # 3. Flashcard count — scalar aggregate (not a list load)
     fc_result = await session.execute(
         sa.select(sa.func.count()).select_from(Flashcard)
         .where(Flashcard.concept_id == concept_id)
