@@ -38,15 +38,19 @@ final class CortexCourseTabState: ObservableObject {
     private init() {}
 
     func resolve(hint: String) async -> Int? {
-        if let id = sessionCourseId { return id }
-
+        // Always attempt semantic matching — sessionCourseId must NOT short-circuit
+        // this, because a previous drop in the same session may have been a different
+        // subject. Example: Math 207 drop sets sessionCourseId=1, then CSE 122 drop
+        // should NOT inherit it without re-matching.
         if let match = await CortexClient.shared.matchCourse(hint: hint) {
             sessionCourseId = match
             return match
         }
 
+        // No confident match — show picker with last-used course pre-selected.
+        // sessionCourseId is used only to seed the picker default, not to skip it.
         let fetched = await CortexClient.shared.fetchCourses()
-        let lastId  = UserDefaults.standard.integer(forKey: "cortex.lastCourseId")
+        let lastId  = sessionCourseId ?? UserDefaults.standard.integer(forKey: "cortex.lastCourseId")
         courses = fetched.map { CourseOption(id: $0.id, title: $0.title, concepts: 0) }
         selectedCourseId = (lastId > 0 && courses.contains { $0.id == lastId }) ? lastId : nil
         isVisible = true

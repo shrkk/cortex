@@ -309,28 +309,8 @@ def _build_graph_payload(course, concepts, flashcards, quiz, edges, source_count
             "data": {},
         })
 
-    # Flashcard nodes + synthetic concept→flashcard "contains" edges
+    # Count flashcards per concept (no individual nodes — count is a badge on ConceptNode)
     for f in flashcards:
-        flashcard_node_id = f"flashcard-{f.id}"
-        parent_node_id = f"concept-{f.concept_id}"
-        nodes.append({
-            "id": flashcard_node_id,
-            "type": "flashcard",
-            "data": {
-                "label": f.front[:60],
-                "flashcard_id": f.id,
-                "front": f.front,
-                "back": f.back,
-                "card_type": f.card_type,
-            },
-        })
-        graph_edges.append({
-            "id": f"contains-fc-{f.id}",
-            "source": parent_node_id,
-            "target": flashcard_node_id,
-            "type": "contains",
-            "data": {},
-        })
         fc_count_by_concept[f.concept_id] = fc_count_by_concept.get(f.concept_id, 0) + 1
 
     # Backfill flashcard_count on concept nodes

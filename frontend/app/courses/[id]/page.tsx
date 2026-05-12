@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -12,13 +12,13 @@ import { apiFetch, type Course, type GraphData, type Concept, type Flashcard, ty
 
 const fetcher = (url: string) => apiFetch<unknown>(url);
 
-export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function CoursePage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
 
   const { data: course } = useSWR<Course>(`/courses/${id}`, fetcher as any);
-  const { data: graphData } = useSWR<GraphData>(`/courses/${id}/graph`, fetcher as any, {
+  const { data: graphData, mutate: mutateGraph } = useSWR<GraphData>(`/courses/${id}/graph`, fetcher as any, {
     // Poll while sources are processing (UI-11, D-10)
     refreshInterval: (data) => {
       // Would check sources status here; default to no polling until sources loaded
@@ -84,7 +84,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {/* Graph canvas */}
-      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+      <div style={{ flex: 1, position: "relative", minHeight: 0, display: "flex", flexDirection: "column" }}>
         <ReactFlowProvider>
           {graph ? (
             <GraphCanvas graphData={graph} onNodeClick={handleNodeClick} />
@@ -123,6 +123,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           concept={concept ?? null}
           flashcards={flashcards ?? []}
           onClose={() => setSelectedConceptId(null)}
+          onStruggleToggled={() => mutateGraph()}
           onGenerateQuiz={async () => {
             try {
               const quiz = await apiFetch<{ id: number; course_id: number; questions: unknown[] }>(

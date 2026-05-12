@@ -1,0 +1,87 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        paper:            "var(--paper)",
+        "paper-deep":     "var(--paper-deep)",
+        surface:          "var(--surface)",
+        "surface-hover":  "var(--surface-hover)",
+        "surface-sunken": "var(--surface-sunken)",
+        border:           "var(--border)",
+        "border-strong":  "var(--border-strong)",
+        "border-soft":    "var(--border-soft)",
+        ink:              "var(--ink)",
+        "ink-soft":       "var(--ink-soft)",
+        "ink-muted":      "var(--ink-muted)",
+        "ink-faint":      "var(--ink-faint)",
+        accent:           "var(--accent)",
+        "accent-hover":   "var(--accent-hover)",
+        "accent-press":   "var(--accent-press)",
+        "accent-soft":    "var(--accent-soft)",
+        "accent-ink":     "var(--accent-ink)",
+        "mastery-high":       "var(--mastery-high)",
+        "mastery-high-soft":  "var(--mastery-high-soft)",
+        "mastery-mid":        "var(--mastery-mid)",
+        "mastery-mid-soft":   "var(--mastery-mid-soft)",
+        "mastery-low":        "var(--mastery-low)",
+        "mastery-low-soft":   "var(--mastery-low-soft)",
+        highlight:        "var(--highlight-bg)",
+      },
+      fontFamily: {
+        serif: "var(--font-serif)",
+        sans:  "var(--font-sans)",
+        mono:  "var(--font-mono)",
+      },
+      fontSize: {
+        display: ["56px", { letterSpacing: "-0.02em", lineHeight: "1.2" }],
+        h1:      ["40px", { letterSpacing: "-0.01em", lineHeight: "1.2" }],
+        h2:      ["28px", { letterSpacing: "-0.01em", lineHeight: "1.35" }],
+        h3:      ["20px", { lineHeight: "1.35" }],
+        h4:      ["17px", { lineHeight: "1.35" }],
+        body:    ["15px", { lineHeight: "1.65" }],
+        small:   ["13px", { lineHeight: "1.35" }],
+        micro:   ["12px", { lineHeight: "1.35" }],
+        "mono-sm": ["13px", { lineHeight: "1.35" }],
+      },
+      spacing: {
+        1:  "4px",
+        2:  "8px",
+        3:  "12px",
+        4:  "16px",
+        5:  "24px",
+        6:  "32px",
+        7:  "48px",
+        8:  "64px",
+        9:  "96px",
+      },
+      borderRadius: {
+        xs:   "4px",
+        sm:   "6px",
+        md:   "8px",
+        lg:   "12px",
+        pill: "999px",
+      },
+      boxShadow: {
+        xs: "0 1px 2px rgba(31,30,27,.04)",
+        sm: "0 1px 2px rgba(31,30,27,.04), 0 2px 6px rgba(31,30,27,.04)",
+        md: "0 1px 2px rgba(31,30,27,.04), 0 8px 24px rgba(31,30,27,.06)",
+        lg: "0 2px 4px rgba(31,30,27,.04), 0 16px 48px rgba(31,30,27,.08)",
+      },
+      transitionDuration: {
+        fast: "120ms",
+        DEFAULT: "200ms",
+        slow: "300ms",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

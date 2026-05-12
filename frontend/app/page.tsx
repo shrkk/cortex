@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Button, Card, Eyebrow, Pill } from "@/components/ui/primitives";
@@ -9,10 +11,63 @@ import { apiFetch, type Course } from "@/lib/api";
 const fetcher = (url: string) => apiFetch<Course[]>(url);
 
 export default function DashboardPage() {
-  const { data: courses, error } = useSWR("/courses", fetcher);
+  const router = useRouter();
+  const { data: courses, error, mutate } = useSWR("/courses", fetcher);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleCreate = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      const c = await apiFetch<Course>("/courses", {
+        method: "POST",
+        body: JSON.stringify({ title: name, user_id: 1 }),
+      });
+      await mutate();
+      setCreating(false);
+      setNewName("");
+      router.push(`/courses/${c.id}`);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <AppShell courses={courses}>
+      {creating && (
+        <div onClick={() => setCreating(false)} style={{ position: "fixed", inset: 0, background: "var(--backdrop)", zIndex: 50 }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
+            padding: "28px 32px", width: 400, boxShadow: "var(--shadow-md)", zIndex: 51,
+          }}>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 500, color: "var(--ink-soft)", marginBottom: 20 }}>New course</div>
+            <input
+              autoFocus
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setCreating(false); }}
+              placeholder="e.g. CSE 122, Linear Algebra…"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "9px 12px",
+                fontFamily: "var(--font-serif)", fontSize: 15,
+                border: "1px solid var(--border)", borderRadius: 8,
+                background: "var(--paper)", color: "var(--ink)", outline: "none",
+                marginBottom: 16,
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <Button variant="secondary" onClick={() => setCreating(false)}>Cancel</Button>
+              <Button onClick={handleCreate} disabled={saving || !newName.trim()}>
+                {saving ? "Creating…" : "Create"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{ flex: 1, padding: "40px 48px", overflowY: "auto" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           {/* Header */}
@@ -31,7 +86,7 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-            <Button icon="plus">New course</Button>
+            <Button icon="plus" onClick={() => setCreating(true)}>New course</Button>
           </div>
 
           {/* Course grid */}

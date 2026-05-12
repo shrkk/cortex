@@ -1,13 +1,12 @@
 "use client";
 
-import { use } from "react";
 import useSWR from "swr";
 import { apiFetch } from "@/lib/api";
 import type { Quiz } from "@/lib/api";
 import { QuizView } from "@/components/QuizView";
 
-export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function QuizPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   const { data: quiz, error } = useSWR<Quiz>(
     id ? `/quiz/${id}` : null,

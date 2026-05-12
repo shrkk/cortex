@@ -2,14 +2,32 @@ import AppKit
 import UniformTypeIdentifiers
 
 enum CortexIngest {
-    // IMPORTANT: Check image UTIs BEFORE file-url. A browser image drop advertises
-    // public.file-url to a temp path that may vanish before we read it.
-    // Priority order: image → file-url → web-url → text
+    // Priority order: pdf → image → file-url → web-url → text
+    // PDF must be first: Finder includes a QuickLook TIFF preview in PDF drags, which
+    // the image branch would intercept. Image before file-url to avoid the browser
+    // vanishing-temp-file trap (browsers advertise public.file-url to a temp path).
     static func handleProviders(_ providers: [NSItemProvider]) -> Bool {
         var handled = false
         for provider in providers {
             // Log available UTIs for debugging
             print("[CortexIngest] Available UTIs: \(provider.registeredTypeIdentifiers)")
+
+            // 0) Explicit PDF — must come BEFORE the image check. Finder attaches a
+            //    QuickLook TIFF thumbnail to every PDF drag; public.tiff conforms to
+            //    public.image, so the image branch below would intercept the drop and
+            //    send the thumbnail instead of the actual file.
+            //    Load data directly: Finder often omits public.file-url from the
+            //    provider's registered UTIs when sandboxed, so loadObject(URL) returns nil.
+            if provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
+                let base = provider.suggestedName ?? "upload"
+                let filename = base.hasSuffix(".pdf") ? base : base + ".pdf"
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.pdf.identifier) { data, _ in
+                    guard let data = data else { return }
+                    Task { await CortexClient.shared.sendPDF(data, filename: filename) }
+                }
+                handled = true
+                continue
+            }
 
             // 1) Image data — covers Safari (public.tiff), Chrome (public.png),
             //    and images dragged from browsers that aren't file-backed.

@@ -34,8 +34,9 @@ _log = logging.getLogger(__name__)
 TIEBREAKER_TOOL: dict[str, Any] = {
     "name": "decide_merge",
     "description": (
-        "Decide if two concept descriptions refer to the same academic concept. "
-        "Both concepts come from the same course."
+        "Decide if two concept descriptions should be stored as a single concept node. "
+        "Merge when concept B is the same as, a subtopic of, or a specific variant/application "
+        "of concept A (or vice versa). Both concepts come from the same course."
     ),
     "input_schema": {
         "type": "object",
@@ -54,12 +55,16 @@ TIEBREAKER_TOOL: dict[str, Any] = {
 # ---------------------------------------------------------------------------
 # Distance thresholds (cosine_distance = 1 - cosine_similarity)
 # similarity >= 0.92  ->  distance <= 0.08  (RESOLVE-02)
-# similarity >= 0.80  ->  distance <= 0.20  (RESOLVE-03, between 0.08 and 0.20)
+# similarity >= 0.72  ->  distance <= 0.28  (RESOLVE-03, LLM tiebreaker)
 # else create new                           (RESOLVE-04)
+#
+# Widened tiebreaker window (0.20 → 0.28) catches subtopic relationships
+# like "mixing problems" vs "nonconstant volume in mixing problems".
+# The LLM prompt merges subtopics/variants, not just identical concepts.
 # ---------------------------------------------------------------------------
 
 _AUTO_MERGE_DIST = 0.08
-_TIEBREAKER_MAX_DIST = 0.20
+_TIEBREAKER_MAX_DIST = 0.35
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +100,10 @@ async def _llm_tiebreaker(
         "Concept B:\n"
         f"  Title: {new_title}\n"
         f"  Definition: {new_definition}\n\n"
-        "Both concepts come from the same course. Are they the same academic concept?"
+        "Both concepts come from the same course. Should they be stored as a single concept node?\n"
+        "Answer YES (same=true) if B is the same as A, a subtopic of A, a specific case/application "
+        "of A, or if A is a subtopic of B. Only answer NO (same=false) if they are genuinely "
+        "distinct concepts that a student would need to learn separately."
     )
     try:
         message = await anthropic_client.messages.create(

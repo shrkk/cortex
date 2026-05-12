@@ -21,30 +21,26 @@ import {
 type FlowNode = Node<Record<string, unknown>>;
 type FlowEdge = Edge<Record<string, unknown>>;
 import "@xyflow/react/dist/style.css";
-import * as dagre from "@dagrejs/dagre";
-import { CourseNode, ConceptNode, FlashcardNode, QuizNode } from "./NodeTypes";
+import { CourseNode, ConceptNode, QuizNode } from "./NodeTypes";
 import type { GraphData, GraphNode } from "@/lib/api";
 
 // nodeTypes MUST be defined outside the component body — prevents object recreation
 const nodeTypes: NodeTypes = {
-  course:    CourseNode,
-  concept:   ConceptNode,
-  flashcard: FlashcardNode,
-  quiz:      QuizNode,
+  course:   CourseNode,
+  concept:  ConceptNode,
+  quiz:     QuizNode,
 };
 
 // ── Edge styles per type ───────────────────────────────────────────────────────
-// Values match UI-SPEC.md §Edge Colors and Styles (dark palette)
 const EDGE_STYLE: Record<
   string,
   { stroke: string; strokeWidth: number; strokeDasharray?: string; opacity: number; arrow: boolean }
 > = {
-  contains:      { stroke: "rgba(255,255,255,0.25)", strokeWidth: 2.5, opacity: 1,    arrow: false },
-  prerequisite:  { stroke: "rgba(255,255,255,0.55)", strokeWidth: 1.5, opacity: 1,    arrow: true  },
-  co_occurrence: { stroke: "rgba(255,255,255,0.20)", strokeWidth: 1.0, strokeDasharray: "6 4", opacity: 1, arrow: false },
-  related:       { stroke: "rgba(255,255,255,0.15)", strokeWidth: 1.0, strokeDasharray: "2 4", opacity: 1, arrow: false },
-  flashcard_of:  { stroke: "rgba(255,255,255,0.15)", strokeWidth: 1.0, strokeDasharray: "2 3", opacity: 0.65, arrow: false },
-  quiz_of:       { stroke: "rgba(255,255,255,0.25)", strokeWidth: 1.5, opacity: 1,    arrow: false },
+  contains:      { stroke: "var(--border-strong)", strokeWidth: 2.4, opacity: 0.85, arrow: false },
+  prerequisite:  { stroke: "var(--ink-muted)",     strokeWidth: 1.4, opacity: 0.85, arrow: true  },
+  co_occurrence: { stroke: "var(--ink-muted)",     strokeWidth: 1.0, strokeDasharray: "5 4", opacity: 0.55, arrow: false },
+  related:       { stroke: "var(--ink-muted)",     strokeWidth: 1.0, strokeDasharray: "1 4", opacity: 0.55, arrow: false },
+  quiz_of:       { stroke: "var(--accent)",        strokeWidth: 1.4, opacity: 0.85, arrow: false },
 };
 
 function CortexEdge({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps) {
@@ -68,56 +64,114 @@ function CortexEdge({ id, sourceX, sourceY, targetX, targetY, data }: EdgeProps)
 
 const edgeTypes: EdgeTypes = { cortex: CortexEdge };
 
-// ── Dagre layout ──────────────────────────────────────────────────────────────
-function nodeSize(nodeType: string, sourceCount = 1) {
-  if (nodeType === "course")    return { w: 132, h: 132 };
-  if (nodeType === "flashcard") return { w: 80,  h: 28  };
-  if (nodeType === "quiz")      return { w: 140, h: 40  };
-  const d = 50 + Math.min(sourceCount, 12) * 5;
-  return { w: d, h: d };
+// ── Radial layout ─────────────────────────────────────────────────────────────
+// Size hints for centering — keep in sync with NodeTypes rendered sizes
+function nodeSize(nodeType: string) {
+  if (nodeType === "course") return { w: 130, h: 130 };
+  if (nodeType === "quiz")   return { w: 140, h: 44  };
+  return { w: 117, h: 117 }; // concept midpoint
+}
+
+// Deterministic pseudo-random — stable across re-renders
+function seededRand(seed: number) {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x); // [0, 1)
 }
 
 function buildLayout(rawNodes: GraphNode[], rawEdges: GraphData["edges"]) {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 80, marginx: 48, marginy: 48 });
+  const courseNode   = rawNodes.find(n => n.type === "course");
+  const conceptNodes = rawNodes.filter(n => n.type === "concept");
+  const leafNodes    = rawNodes.filter(n => n.type === "quiz");
 
-  rawNodes.forEach((n) => {
-    // Backend: n.type at root, n.data.source_count nested
-    const { w, h } = nodeSize(n.type, n.data.source_count);
-    g.setNode(n.id, { width: w, height: h });
+  // Map each leaf to its parent concept
+  const parentOfLeaf: Record<string, string> = {};
+  rawEdges.forEach(e => {
+    const tgt = rawNodes.find(n => n.id === e.target);
+    if (tgt?.type === "quiz") {
+      parentOfLeaf[e.target] = e.source;
+    }
   });
-  rawEdges.forEach((e) => {
-    g.setEdge(e.source, e.target);
+
+  const CENTER = { x: 0, y: 0 };
+  const n = conceptNodes.length || 1;
+  // 170px arc per concept ensures adequate spacing between 120px circles
+  const CONCEPT_RADIUS = Math.max(300, (n * 140) / (2 * Math.PI));
+  const LEAF_OFFSET    = 130;
+
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  if (courseNode) positions[courseNode.id] = { ...CENTER };
+
+  conceptNodes.forEach((node, i) => {
+    // Angular positions are uniformly spaced (no angular jitter) to prevent overlap.
+    // Only radius varies ±14% for an organic feel.
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+    const r     = CONCEPT_RADIUS * (0.93 + seededRand(i) * 0.14); // 93%–107%
+    positions[node.id] = {
+      x: CENTER.x + r * Math.cos(angle),
+      y: CENTER.y + r * Math.sin(angle),
+    };
   });
-  dagre.layout(g);
+
+  // Group leaves by parent, fan outward from concept
+  const leavesByParent: Record<string, typeof leafNodes> = {};
+  leafNodes.forEach(leaf => {
+    const pid = parentOfLeaf[leaf.id];
+    if (!pid) return;
+    (leavesByParent[pid] ??= []).push(leaf);
+  });
+
+  Object.entries(leavesByParent).forEach(([parentId, leaves]) => {
+    const pp = positions[parentId];
+    if (!pp) return;
+    const outAngle = Math.atan2(pp.y - CENTER.y, pp.x - CENTER.x);
+    const spread = 0.45;
+    leaves.forEach((leaf, i) => {
+      const offset = (i - (leaves.length - 1) / 2) * spread;
+      const a = outAngle + offset;
+      positions[leaf.id] = {
+        x: pp.x + LEAF_OFFSET * Math.cos(a),
+        y: pp.y + LEAF_OFFSET * Math.sin(a),
+      };
+    });
+  });
+
+  // Fallback for disconnected nodes
+  rawNodes.forEach((node, i) => {
+    if (!positions[node.id]) {
+      positions[node.id] = { x: CONCEPT_RADIUS * 2 + i * 110, y: 0 };
+    }
+  });
 
   const nodes: Node[] = rawNodes.map((n) => {
-    const pos = g.node(n.id);
+    const pos = positions[n.id];
+    const { w, h } = nodeSize(n.type);
     return {
       id: n.id,
-      type: n.type,                          // FIX: was n.node_type — backend uses "type" at root
-      position: { x: pos.x - pos.width / 2, y: pos.y - pos.height / 2 },
+      type: n.type,
+      position: { x: pos.x - w / 2, y: pos.y - h / 2 },
       data: {
-        label:           n.data.label,        // FIX: was n.label — backend nests in data
+        label:           n.data.label,
         source_count:    n.data.source_count,
-        has_struggle:    n.data.has_struggle_signals,  // FIX: was has_struggle — backend uses has_struggle_signals
+        has_struggle:    n.data.has_struggle_signals,
         flashcard_count: n.data.flashcard_count,
         concept_id:      n.data.concept_id,
         quiz_id:         n.data.quiz_id,
-        flashcard_id:    n.data.flashcard_id,
         course_id:       n.data.course_id,
       },
     };
   });
 
-  const edges: Edge[] = rawEdges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: "cortex",
-    data: { edge_type: e.type },  // FIX: was e.edge_type — backend uses "type" at root
-  }));
+  // Strip co-occurrence edges — too noisy visually
+  const edges: Edge[] = rawEdges
+    .filter(e => e.type !== "co_occurrence")
+    .map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: "cortex",
+      data: { edge_type: e.type },
+    }));
 
   return { nodes, edges };
 }
@@ -154,7 +208,7 @@ export function GraphCanvas({
   );
 
   return (
-    <div style={{ flex: 1, minHeight: 0 }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -173,7 +227,7 @@ export function GraphCanvas({
           variant={BackgroundVariant.Dots}
           gap={28}
           size={1}
-          color="rgba(255,255,255,0.06)"
+          color="rgba(31,30,27,0.06)"
         />
         <Controls />
 
@@ -194,7 +248,7 @@ function Legend() {
         display: "flex",
         gap: 14,
         padding: "10px 14px",
-        background: "rgba(20,18,15,0.90)",
+        background: "rgba(253,251,247,.85)",
         backdropFilter: "blur(12px)",
         border: "1px solid var(--border)",
         borderRadius: 8,
@@ -257,21 +311,6 @@ function Legend() {
               width: 18,
               height: 12,
               borderRadius: 3,
-              border: "1.5px dashed var(--accent)",
-              background: "var(--surface)",
-              display: "inline-block",
-            }}
-          />
-        }
-        label="flashcards"
-      />
-      <LegendItem
-        swatch={
-          <span
-            style={{
-              width: 18,
-              height: 12,
-              borderRadius: 3,
               background: "var(--accent)",
               display: "inline-block",
             }}
@@ -296,22 +335,6 @@ function Legend() {
           </svg>
         }
         label="prerequisite"
-      />
-      <LegendItem
-        swatch={
-          <svg width="22" height="6">
-            <line
-              x1="0"
-              y1="3"
-              x2="22"
-              y2="3"
-              stroke="var(--ink-muted)"
-              strokeWidth="1"
-              strokeDasharray="5 4"
-            />
-          </svg>
-        }
-        label="co-occurrence"
       />
       <LegendItem
         swatch={

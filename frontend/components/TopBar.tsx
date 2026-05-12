@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button, Icon, Kbd } from "./ui/primitives";
 
 export function TopBar({
@@ -22,8 +23,8 @@ export function TopBar({
         zIndex: 10,
       }}
     >
-      {/* Wordmark */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+      {/* Wordmark — links home */}
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, textDecoration: "none" }}>
         <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
           <circle cx="32" cy="32" r="22" stroke="var(--ink-soft)" strokeWidth="1.6" />
           <path
@@ -51,7 +52,7 @@ export function TopBar({
         >
           Cortex
         </span>
-      </div>
+      </Link>
 
       {/* Search / command bar trigger */}
       <div style={{ flex: 1, maxWidth: 480, marginLeft: 16 }}>

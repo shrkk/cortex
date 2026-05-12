@@ -224,6 +224,24 @@ async def _generate_quiz_questions(
 # POST /quiz — generate a new quiz for a course
 # ---------------------------------------------------------------------------
 
+@router.get("")
+async def list_quizzes(session: AsyncSession = Depends(get_session)):
+    """Return all quizzes ordered newest first, with question count."""
+    result = await session.execute(
+        sa.select(Quiz).order_by(Quiz.created_at.desc())
+    )
+    quizzes = result.scalars().all()
+    return [
+        {
+            "id": q.id,
+            "course_id": q.course_id,
+            "created_at": q.created_at,
+            "question_count": len(q.questions) if q.questions else 0,
+        }
+        for q in quizzes
+    ]
+
+
 @router.post("", response_model=QuizResponse, status_code=201)
 async def create_quiz(body: QuizCreate):
     """Generate a quiz scoped to a course.

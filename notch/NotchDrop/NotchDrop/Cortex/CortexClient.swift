@@ -53,7 +53,6 @@ final class CortexClient: ObservableObject {
     /// Resolve a course ID, preferring the current session ID, then calling
     /// CortexCourseTabState.resolve, falling back to 1.
     private func resolveCourseId(hint: String) async -> Int {
-        if let id = CortexCourseTabState.shared.sessionCourseId { return id }
         if let id = await CortexCourseTabState.shared.resolve(hint: hint) { return id }
         return 1
     }
@@ -78,6 +77,19 @@ final class CortexClient: ObservableObject {
         recentDrops.insert(drop, at: 0)
         if recentDrops.count > 5 {
             recentDrops = Array(recentDrops.prefix(5))
+        }
+    }
+
+    func sendPDF(_ data: Data, filename: String) async {
+        await setStatus(.sending(progress: 0.1))
+        do {
+            let courseId = await resolveCourseId(hint: filename)
+            try await uploadMultipart(data: data, filename: filename, mime: "application/pdf", kind: .pdf, courseId: courseId)
+            let name = courseName(for: courseId)
+            appendDrop(typeBadge: "PDF", title: filename, courseName: name)
+            await setStatus(.success(message: "Sent to \(name)"))
+        } catch {
+            await setStatus(.error(error.localizedDescription))
         }
     }
 

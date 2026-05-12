@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 // ── Course root ───────────────────────────────────────────────────────────────
-// UI-SPEC: 60px circle, #C96442 fill, no border, label #FAF7F2 inside
+// Dark circle on the light canvas, serif wordmark inside
 export const CourseNode = memo(function CourseNode({ data }: NodeProps) {
   const d = data as { label?: string };
   return (
@@ -15,26 +15,25 @@ export const CourseNode = memo(function CourseNode({ data }: NodeProps) {
         role="button"
         aria-label={d.label ?? "Course"}
         style={{
-          width: 60,
-          height: 60,
+          width: 200,
+          height: 200,
           borderRadius: "50%",
-          background: "#C96442",
+          background: "var(--ink-soft)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          position: "relative",
+          justifyContent: "center", 
+          cursor: "grab",
         }}
       >
         <span style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#FAF7F2",
+          fontFamily: "var(--font-serif)",
+          fontSize: 16,
+          fontWeight: 500,
+          color: "var(--paper)",
           textAlign: "center",
-          lineHeight: 1.2,
-          padding: "0 6px",
-          wordBreak: "break-word",
-          maxWidth: 52,
+          lineHeight: 1.25,
+          padding: "0 18px",
+          letterSpacing: "-0.01em",
         }}>
           {d.label}
         </span>
@@ -44,61 +43,98 @@ export const CourseNode = memo(function CourseNode({ data }: NodeProps) {
 });
 
 // ── Concept ───────────────────────────────────────────────────────────────────
-// UI-SPEC: 32–48px circle scaled by source_count, #3A3832 fill, 1px rgba border
-// Struggle signal: box-shadow 0 0 0 3px #EF4444 + cortex-pulse animation (D-04)
-// Diameter formula (D-02): d = 32 + min(max(source_count - 1, 0), 4) * 4
-//   source_count=1 → 32px; 2 → 36px; 3 → 40px; 4 → 44px; 5+ → 48px
+// Light surface circle, serif label inside, struggle = mastery-low border + pulse dot
+// Struggle nodes with flashcards show a small count badge at bottom-right
 export const ConceptNode = memo(function ConceptNode({ data }: NodeProps) {
   const d = data as {
     label?: string;
     source_count?: number;
     has_struggle?: boolean;
+    flashcard_count?: number;
     concept_id?: number;
   };
   const sc = d.source_count ?? 1;
-  const diam = 32 + Math.min(Math.max(sc - 1, 0), 4) * 4;
+  // 110–130px: large circles so labels are readable
+  const diam = 110 + Math.min(Math.max(sc - 1, 0), 4) * 5;
+  const showFlashcardBadge = d.has_struggle && (d.flashcard_count ?? 0) > 0;
 
   return (
     <>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
       <Handle type="target" position={Position.Top}    style={{ opacity: 0 }} />
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <div
-          role="button"
-          aria-label={d.label ?? "Concept"}
-          style={{
-            width: diam,
-            height: diam,
+      <div
+        role="button"
+        aria-label={d.label ?? "Concept"}
+        style={{
+          width: diam,
+          height: diam,
+          borderRadius: "50%",
+          background: "var(--surface)",
+          border: d.has_struggle
+            ? "1.5px solid var(--mastery-low)"
+            : "1.5px solid var(--border-strong)",
+          cursor: "grab",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          transition: "border-color 200ms var(--ease), background 200ms var(--ease)",
+          boxShadow: d.has_struggle
+            ? "0 0 0 3px var(--mastery-low-soft)"
+            : "var(--shadow-xs)",
+          animation: d.has_struggle ? "cortex-pulse 1.5s ease-in-out infinite" : undefined,
+        }}
+      >
+        {d.has_struggle && (
+          <span style={{
+            position: "absolute",
+            top: 6,
+            right: 6,
+            width: 8,
+            height: 8,
             borderRadius: "50%",
-            background: "#3A3832",
-            border: "1px solid rgba(255,255,255,0.15)",
-            cursor: "pointer",
-            position: "relative",
-            flexShrink: 0,
-            // Struggle ring via box-shadow (D-04: ring only, no fill change)
-            boxShadow: d.has_struggle
-              ? "0 0 0 3px #EF4444"
-              : undefined,
-            animation: d.has_struggle
-              ? "cortex-pulse 1.5s ease-in-out infinite"
-              : undefined,
-          }}
-        />
+            background: "var(--mastery-low)",
+            boxShadow: "0 0 0 2px var(--surface)",
+          }} />
+        )}
         {d.label && (
           <span style={{
-            fontSize: 12,
-            fontWeight: 600,
-            lineHeight: 1.2,
-            color: "rgba(250,247,242,0.80)",
+            fontFamily: "var(--font-serif)",
+            fontSize: Math.max(12, Math.min(15, diam * 0.125)),
+            fontWeight: 500,
+            lineHeight: 1.25,
+            color: "var(--ink-soft)",
             textAlign: "center",
-            maxWidth: 80,
+            padding: "0 10px",
             display: "-webkit-box",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 4,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
             pointerEvents: "none",
+            letterSpacing: "-0.005em",
           }}>
             {d.label}
+          </span>
+        )}
+        {showFlashcardBadge && (
+          <span style={{
+            position: "absolute",
+            bottom: -8,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--accent)",
+            color: "var(--accent-ink)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.02em",
+            padding: "2px 7px",
+            borderRadius: 99,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+          }}>
+            {d.flashcard_count}
           </span>
         )}
       </div>
@@ -106,31 +142,9 @@ export const ConceptNode = memo(function ConceptNode({ data }: NodeProps) {
   );
 });
 
-// ── Flashcard ─────────────────────────────────────────────────────────────────
-// UI-SPEC: 40px circle, #2A3D2F fill, #6B8E5A 1.5px solid border (D-05)
-export const FlashcardNode = memo(function FlashcardNode({ data }: NodeProps) {
-  const d = data as { label?: string };
-  return (
-    <>
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
-      <Handle type="target" position={Position.Top}    style={{ opacity: 0 }} />
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: "#2A3D2F",
-          border: "1.5px solid #6B8E5A",
-          cursor: "pointer",
-        }}
-        title={d.label}
-      />
-    </>
-  );
-});
 
 // ── Quiz ──────────────────────────────────────────────────────────────────────
-// UI-SPEC: 40px circle, #3D2E1F fill, #C18A3F 1.5px dashed border (D-05)
+// Solid accent-filled pill, sans bold white label
 export const QuizNode = memo(function QuizNode({ data }: NodeProps) {
   const d = data as { label?: string; quiz_id?: number };
   return (
@@ -141,19 +155,29 @@ export const QuizNode = memo(function QuizNode({ data }: NodeProps) {
         role="button"
         aria-label="Quiz"
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: "#3D2E1F",
-          border: "1.5px dashed #C18A3F",
+          padding: "9px 16px",
+          borderRadius: 6,
+          background: "var(--accent)",
+          border: "1.5px solid var(--accent)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          minWidth: 110,
+          whiteSpace: "nowrap",
+          transition: "background 200ms var(--ease)",
         }}
-        title="Take Quiz"
+        title="Take quiz"
       >
-        <span style={{ fontSize: 10, fontWeight: 700, color: "#C18A3F" }}>Q</span>
+        <span style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--accent-ink)",
+          letterSpacing: "0",
+        }}>
+          {d.label ?? "Weak-spot quiz"}
+        </span>
       </div>
     </>
   );

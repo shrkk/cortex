@@ -16,9 +16,9 @@ export function AppShell({
   const [cmdOpen, setCmdOpen] = useState(false);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "var(--paper)" }}>
       <TopBar onCommandBar={() => setCmdOpen(true)} />
-      <div style={{ display: "flex", minHeight: "calc(100vh - 56px)" }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <Sidebar courses={courses} />
         <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
           {children}

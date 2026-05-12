@@ -58,7 +58,7 @@ export interface GraphNodeData {
 
 export interface GraphNode {
   id: string;
-  type: "course" | "concept" | "flashcard" | "quiz";  // was: node_type
+  type: "course" | "concept" | "quiz";
   data: GraphNodeData;                                  // was: flat fields at root
 }
 
@@ -90,6 +90,7 @@ export interface Concept {
   flashcard_count?: number;
   struggle_signals?: Record<string, unknown> | null;  // FIX: was Array<{label,detail}> — backend returns dict|null
   depth?: number;
+  course_id?: number;
 }
 
 export interface Flashcard {
@@ -98,6 +99,8 @@ export interface Flashcard {
   front: string;
   back: string;
   card_type: "definition" | "application" | "gotcha" | "compare";
+  concept_title?: string;
+  course_id?: number;
 }
 
 // FIX: was { id, question_type, prompt, topic, explanation }

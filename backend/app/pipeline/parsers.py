@@ -23,7 +23,9 @@ from app.core.config import settings
 async def parse_pdf(data: bytes, filename: str) -> tuple[list[dict], str]:
     """Parse PDF bytes page-by-page. Returns one chunk per non-empty page.
 
-    Empty/near-empty pages (< 50 chars after strip) are skipped (D-09).
+    For pages with a text layer (>= 50 chars), text is extracted directly.
+    For scanned/image-only pages (< 50 chars), the page is rendered as a PNG
+    and sent to Claude vision OCR via parse_image (D-09).
     page_num is 1-indexed.
     """
     title = filename.rsplit(".", 1)[0]  # strip extension
@@ -31,9 +33,15 @@ async def parse_pdf(data: bytes, filename: str) -> tuple[list[dict], str]:
     chunks: list[dict] = []
     for page in doc:
         text = page.get_text().strip()
-        if len(text) < 50:
-            continue  # skip blank / title pages (D-09)
-        chunks.append({"text": text, "page_num": page.number + 1})
+        if len(text) >= 50:
+            chunks.append({"text": text, "page_num": page.number + 1})
+        else:
+            # Scanned page — render at 2x and OCR via Claude vision
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            img_bytes = pix.tobytes("png")
+            ocr_chunks, _ = await parse_image(img_bytes, f"page_{page.number + 1}.png")
+            for c in ocr_chunks:
+                chunks.append({"text": c["text"], "page_num": page.number + 1})
     doc.close()
     return chunks, title
 

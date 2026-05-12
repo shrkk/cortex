@@ -1,14 +1,64 @@
 from __future__ import annotations
 
+import anthropic
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_session
 from app.models.models import Concept, ConceptSource, Course, Flashcard, Source
 from app.schemas.concepts import ConceptDetailResponse, FlashcardResponse, SourceCitation
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# GET /concepts/struggle-flashcards — all flashcards for struggle concepts
+# ---------------------------------------------------------------------------
+
+class StruggleFlashcard(FlashcardResponse):
+    concept_id: int
+    concept_title: str
+    course_id: int
+
+
+@router.get("/struggle-flashcards", response_model=list[StruggleFlashcard])
+async def list_struggle_flashcards(
+    session: AsyncSession = Depends(get_session),
+):
+    """Return all flashcards for concepts that have any struggle signal, for user_id=1."""
+    rows = await session.execute(
+        sa.select(
+            Flashcard.id,
+            Flashcard.concept_id,
+            Flashcard.front,
+            Flashcard.back,
+            Flashcard.card_type,
+            Flashcard.created_at,
+            Concept.title.label("concept_title"),
+            Concept.course_id,
+        )
+        .join(Concept, Flashcard.concept_id == Concept.id)
+        .join(Course, Concept.course_id == Course.id)
+        .where(Course.user_id == 1, Concept.struggle_signals.isnot(None))
+        .order_by(Concept.id, Flashcard.id)
+    )
+    return [
+        {
+            "id": r.id,
+            "concept_id": r.concept_id,
+            "front": r.front,
+            "back": r.back,
+            "card_type": r.card_type,
+            "created_at": r.created_at,
+            "concept_title": r.concept_title,
+            "course_id": r.course_id,
+        }
+        for r in rows.all()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -116,3 +166,81 @@ async def list_concept_flashcards(
         .order_by(Flashcard.id)
     )
     return result.scalars().all()
+
+
+# ---------------------------------------------------------------------------
+# POST /concepts/{concept_id}/mark-struggle — toggle manual struggle signal
+# ---------------------------------------------------------------------------
+
+@router.post("/{concept_id}/mark-struggle")
+async def mark_struggle(
+    concept_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    concept = (await session.execute(
+        sa.select(Concept).join(Course, Concept.course_id == Course.id)
+        .where(Concept.id == concept_id, Course.user_id == 1)
+    )).scalar_one_or_none()
+    if concept is None:
+        raise HTTPException(status_code=404, detail="Concept not found")
+
+    signals = dict(concept.struggle_signals or {})
+    if "manual" in signals:
+        signals.pop("manual")
+    else:
+        signals["manual"] = "Marked as trouble by student"
+    concept.struggle_signals = signals or None
+    await session.commit()
+    return {"struggle_signals": concept.struggle_signals}
+
+
+# ---------------------------------------------------------------------------
+# POST /concepts/{concept_id}/chat — streaming Claude answer with concept ctx
+# ---------------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    question: str
+
+
+@router.post("/{concept_id}/chat")
+async def chat_concept(
+    concept_id: int,
+    body: ChatRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    concept = (await session.execute(
+        sa.select(Concept).join(Course, Concept.course_id == Course.id)
+        .where(Concept.id == concept_id, Course.user_id == 1)
+    )).scalar_one_or_none()
+    if concept is None:
+        raise HTTPException(status_code=404, detail="Concept not found")
+
+    ctx_parts = [f"Concept: {concept.title}"]
+    if concept.definition:
+        ctx_parts.append(f"Definition: {concept.definition}")
+    if concept.key_points:
+        ctx_parts.append("Key points:\n" + "\n".join(f"- {p}" for p in concept.key_points))
+    if concept.gotchas:
+        ctx_parts.append("Common gotchas:\n" + "\n".join(f"- {g}" for g in concept.gotchas))
+    context = "\n\n".join(ctx_parts)
+
+    system = (
+        "You are Cortex, a concise and precise academic tutor. "
+        "Answer the student's question using only the concept context provided. "
+        "Be direct and clear. Use LaTeX for any math expressions (inline: $...$, block: $$...$$). "
+        "Keep answers under 200 words unless more depth is genuinely needed."
+    )
+    user_msg = f"{context}\n\n---\nStudent question: {body.question}"
+
+    async def generate():
+        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        async with client.messages.stream(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            system=system,
+            messages=[{"role": "user", "content": user_msg}],
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
+
+    return StreamingResponse(generate(), media_type="text/plain")

@@ -5,41 +5,41 @@
 @tailwind utilities;
 
 /* ============================================================
-   Cortex Design System — tokens
+   Cortex Design System — light paper palette
    ============================================================ */
 :root {
-  /* Surfaces — dark Cortex palette (UI-SPEC §Color) */
-  --paper:           #1F1E1B;   /* bg-base per UI-SPEC */
-  --paper-deep:      #14120F;   /* bg-panel per UI-SPEC */
-  --surface:         #14120F;   /* bg-panel (cards, panels) */
-  --surface-hover:   rgba(255,255,255,0.04);  /* surface-hover per UI-SPEC */
-  --surface-sunken:  #0E0D0B;   /* deeper than bg-panel */
+  /* Surfaces */
+  --paper:           #FAF7F2;
+  --paper-deep:      #F5F1EA;
+  --surface:         #FDFBF7;
+  --surface-hover:   #F2EDE3;
+  --surface-sunken:  #EFEAE0;
 
   /* Borders */
-  --border:          rgba(255,255,255,0.06);  /* border-subtle per UI-SPEC */
-  --border-strong:   rgba(255,255,255,0.15);  /* node border per UI-SPEC */
-  --border-soft:     rgba(255,255,255,0.04);
+  --border:          #E8E2D6;
+  --border-strong:   #D9D2C2;
+  --border-soft:     #F0EBDF;
 
   /* Text */
-  --ink:             #FAF7F2;   /* text-primary per UI-SPEC */
-  --ink-soft:        #F2EDE3;   /* text-secondary per UI-SPEC */
-  --ink-muted:       rgba(242,237,227,0.50);  /* text-muted (50% opacity) */
-  --ink-faint:       #9A9388;   /* idle-muted (unchanged) */
+  --ink:             #1F1E1B;
+  --ink-soft:        #2C2A26;
+  --ink-muted:       #6B655D;
+  --ink-faint:       #9A9388;
 
-  /* Accent — unchanged; already match UI-SPEC */
+  /* Accent — terracotta / clay */
   --accent:          #C96442;
   --accent-hover:    #B85838;
   --accent-press:    #A54E31;
-  --accent-soft:     rgba(201,100,66,0.15);   /* adjust for dark bg */
-  --accent-ink:      #FAF7F2;
+  --accent-soft:     #F4E3D9;
+  --accent-ink:      #FDFBF7;
 
-  /* Mastery / state — unchanged */
+  /* Mastery / state */
   --mastery-high:       #6B8E5A;
-  --mastery-high-soft:  rgba(107,142,90,0.15);
+  --mastery-high-soft:  #E5EDDD;
   --mastery-mid:        #C18A3F;
-  --mastery-mid-soft:   rgba(193,138,63,0.15);
+  --mastery-mid-soft:   #F2E6CD;
   --mastery-low:        #B5604A;
-  --mastery-low-soft:   rgba(181,96,74,0.15);
+  --mastery-low-soft:   #F1DCD3;
 
   --success:      var(--mastery-high);
   --success-soft: var(--mastery-high-soft);
@@ -48,54 +48,82 @@
   --danger:       var(--mastery-low);
   --danger-soft:  var(--mastery-low-soft);
   --info:         #5B7C99;
-  --info-soft:    rgba(91,124,153,0.15);
+  --info-soft:    #DDE6EE;
 
-  /* Highlights — amber tint for gotcha text */
-  --highlight-bg:  rgba(193,138,63,0.20);   /* amber tint for dark bg */
+  /* Highlights */
+  --highlight-bg:  #F7E9D5;
   --highlight-bar: #C18A3F;
 
-  /* Shadows — updated for dark bg */
-  --shadow-xs: 0 1px 2px rgba(0,0,0,0.20);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.20);
-  --shadow-md: 0 1px 2px rgba(0,0,0,0.20), 0 8px 24px rgba(0,0,0,0.30);
-  --shadow-lg: 0 2px 4px rgba(0,0,0,0.20), 0 16px 48px rgba(0,0,0,0.40);
-  --backdrop:  rgba(0,0,0,0.60);
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(31,30,27,.04);
+  --shadow-sm: 0 1px 2px rgba(31,30,27,.04), 0 2px 6px rgba(31,30,27,.04);
+  --shadow-md: 0 1px 2px rgba(31,30,27,.04), 0 8px 24px rgba(31,30,27,.06);
+  --shadow-lg: 0 2px 4px rgba(31,30,27,.04), 0 16px 48px rgba(31,30,27,.08);
+  --backdrop:  rgba(31,30,27,.16);
 
-  /* Radius — unchanged */
+  /* Radius */
   --radius-xs:   4px;
   --radius-sm:   6px;
   --radius-md:   8px;
   --radius-lg:   12px;
   --radius-pill: 999px;
 
-  /* Layout — unchanged */
+  /* Spacing */
+  --space-1:  4px;   --space-2:  8px;   --space-3:  12px;
+  --space-4:  16px;  --space-5:  24px;  --space-6:  32px;
+  --space-7:  48px;  --space-8:  64px;  --space-9:  96px;
+
+  /* Layout */
   --measure-prose: 65ch;
   --container-max: 1280px;
   --topbar-h:      56px;
   --sidebar-w:     240px;
   --drawer-w:      480px;
 
-  /* Motion — unchanged */
+  /* Motion */
   --ease:     cubic-bezier(0.2, 0.6, 0.2, 1);
   --dur-fast: 120ms;
   --dur:      200ms;
   --dur-slow: 300ms;
 
-  /* Fonts — unchanged */
+  /* Fonts */
   --font-serif: "Source Serif 4", "Tiempos Text", Georgia, serif;
   --font-sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* Type scale */
+  --fs-display: 56px;
+  --fs-h1:      40px;
+  --fs-h2:      28px;
+  --fs-h3:      20px;
+  --fs-h4:      17px;
+  --fs-body:    15px;
+  --fs-small:   13px;
+  --fs-micro:   12px;
+  --fs-mono:    13px;
+
+  --lh-tight: 1.2;
+  --lh-snug:  1.35;
+  --lh-body:  1.65;
+  --lh-loose: 1.8;
+
+  --tracking-display: -0.02em;
+  --tracking-heading: -0.01em;
+  --tracking-body:     0;
+  --tracking-caps:     0.06em;
 }
 
 /* ============================================================
    Base
    ============================================================ */
 html, body {
+  height: 100%;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tracking-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -106,10 +134,13 @@ h1, h2, h3 {
   color: var(--ink-soft);
   font-weight: 500;
   margin: 0;
+  letter-spacing: var(--tracking-heading);
 }
 
 h4 {
   font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--ink);
   margin: 0;
 }
 
@@ -131,7 +162,7 @@ a:hover { text-decoration-color: var(--accent); }
 
 ::selection { background: var(--highlight-bg); color: var(--ink); }
 
-/* Scrollbars */
+/* Slim warm scrollbars */
 *::-webkit-scrollbar { width: 6px; height: 6px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
@@ -165,22 +196,39 @@ a:hover { text-decoration-color: var(--accent); }
   50%       { opacity: 0.4; }
 }
 
+@keyframes cortex-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
 /* ============================================================
-   React Flow overrides — match dark design tokens
+   React Flow overrides — light theme
    ============================================================ */
 .react-flow__background { background: var(--paper) !important; }
-.react-flow__controls button {
+.react-flow__controls {
   background: var(--surface) !important;
-  border-color: var(--border) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm) !important;
+}
+.react-flow__controls button {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-soft) !important;
   color: var(--ink-muted) !important;
 }
 .react-flow__controls button:hover {
   background: var(--surface-hover) !important;
+  color: var(--ink) !important;
+}
+.react-flow__controls button:last-child {
+  border-bottom: 0 !important;
 }
 .react-flow__minimap { border: 1px solid var(--border) !important; }
 
 /* ============================================================
-   Flashcard 3D flip (UI-SPEC §Flashcard Flip Mode)
+   Flashcard 3D flip
    ============================================================ */
 .flashcard-container {
   perspective: 1000px;
@@ -205,15 +253,8 @@ a:hover { text-decoration-color: var(--accent); }
   padding: 24px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
+  background: var(--surface);
 }
 .flashcard-back {
   transform: rotateY(180deg);
-}
-
-/* ============================================================
-   Struggle signal pulsing ring (UI-SPEC §Node Fill Colors)
-   ============================================================ */
-@keyframes cortex-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
 }
