@@ -7,3 +7,5 @@ venv/
 *.egg
 .pytest_cache/
 .mypy_cache/
+node_modules/
+.next/
